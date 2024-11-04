@@ -29,7 +29,15 @@ jobs:
         shell: cmd
         run: |
           buildAndInstall.bat 64 true
+          dir /b /s .\install
 
+      - name: Run test script
+        id: run_testscriipt
+        shell: cmd
+        run: |
+          run_sqliteODBC_test_WSF.bat 64
+
+            
       # - name: install ODBC
       #   id: install_odbc
       #   shell: cmd
