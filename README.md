@@ -7,7 +7,7 @@ This is a fork of https://github.com/softace/sqliteodbc with modifications to bu
 Features
 - Builds in Visual Studio using nmake
 - 32 and 64 bit builds work
-- It includes a batch script to build and install on Windows (10 and 11 tested).
+- It includes a batch script [buildAndInstall.bat](https://github.com/msi-cxb/sqliteodbc/blob/master/buildAndInstall.bat) to build and install on Windows (10 and 11 tested).
 
 TODO
 - build and test both 32 and 64 bit drivers in CI
