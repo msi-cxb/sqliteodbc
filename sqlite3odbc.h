@@ -42,6 +42,11 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
+
+// cxb - using our own modified sqltypes.h to get correct x64 data types
+// including local version in quotes before the system sql headers should override loading of system version
+#include "sqltypes.h"
+
 #include <sql.h>
 #include <sqlext.h>
 #include <time.h>

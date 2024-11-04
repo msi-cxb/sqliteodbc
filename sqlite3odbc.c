@@ -400,10 +400,26 @@ xstrdup_(const char *str, char *file, int line)
 
 #else
 
+// define SQLITE_ODBC_WIN32_MALLOC to use malloc() and avoid sqlite 2GB result limit
+#if (SQLITE_ODBC_WIN32_MALLOC)
+
+#pragma message(">>>>>>>>>>>>>>>>>>>>>>>>>>>> malloc")
+
+#define xmalloc(x)    malloc(x)
+#define xrealloc(x,y) realloc(x, y)
+#define xfree(x)      free(x)
+#define xstrdup(x)    strdup_(x)
+
+#else
+
+#pragma message(">>>>>>>>>>>>>>>>>>>>>>>>>>>> sqlite3_malloc")
+
 #define xmalloc(x)    sqlite3_malloc(x)
 #define xrealloc(x,y) sqlite3_realloc(x, y)
 #define xfree(x)      sqlite3_free(x)
 #define xstrdup(x)    strdup_(x)
+
+#endif
 
 #endif
 
@@ -577,6 +593,65 @@ static const char space_chars[] = " \f\n\r\t\v";
 #define ISSPACE(c) \
     ((c) && strchr(space_chars, (c)) != NULL)
 
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// cxb tracing code
+//
+// Use TRACE_CXB[_PLUS|_MINUS] as you would normal printf(). Method,
+// line number, and indenting will be added automatically.
+// Tracing is enabled by defining __CXB when compiling. For example,
+// add -D__CXB to the compile step for this .c file (doesn't hurt to add to
+// others). Trace file goes to c:/temp/trace.txt.
+
+// Note that followig variables need to be here regardless of if tracing is enabled.
+char cxb[4096];
+int cxb_indent = 0;
+int cxb_indent_spaces = 4;
+
+// turns tracing on and off
+#ifdef __CXB
+#define CXB_DEBUG 1
+#else
+#define CXB_DEBUG 0
+#endif
+
+// The code inside of if(){ } needs to be on single line so that 
+// __LINE__ is the line number of TRACE_CXB/TRACE_CXB_PLUS/TRACE_CXB_MINUS methods.
+
+// the standard trace method with no adjustment to indenting
+#define TRACE_CXB(fmt, ...) \
+    do { \
+        if (CXB_DEBUG) { FILE *cxb; cxb = fopen("c:/temp/trace.txt", "a"); fprintf(cxb, "%*.0s%s %d: " fmt "\n",cxb_indent," ", __FUNCTION__, __LINE__, __VA_ARGS__); fflush(cxb); fclose(cxb); \
+        } \
+    } while (0)
+
+// print the trace, increment indent level by 1
+#define TRACE_CXB_PLUS(fmt, ...) \
+    do { \
+        if (CXB_DEBUG) { FILE *cxb; cxb = fopen("c:/temp/trace.txt", "a"); fprintf(cxb, "%*.0s%s %d: " fmt "\n",cxb_indent," ", __FUNCTION__, __LINE__, __VA_ARGS__); fflush(cxb); fclose(cxb); cxb_indent = cxb_indent + cxb_indent_spaces; \
+        } \
+    } while (0)
+
+// decrease the indent level by 1, print the trace message
+#define TRACE_CXB_MINUS(fmt, ...) \
+    do { \
+        if (CXB_DEBUG) { cxb_indent = cxb_indent - cxb_indent_spaces; if(cxb_indent<0) {cxb_indent=0;} FILE *cxb; cxb = fopen("c:/temp/trace.txt", "a"); fprintf(cxb, "%*.0s%s %d: " fmt "\n", cxb_indent, " ", __FUNCTION__, __LINE__, __VA_ARGS__); fflush(cxb); fclose(cxb); \
+        } \
+    } while (0)
+
+// this one will always work...
+#define TRACE_CXB_ALWAYS(fmt, ...) \
+    do { \
+        FILE *cxb; cxb = fopen("c:/temp/trace.txt", "a"); fprintf(cxb, "%*.0s%s %d: " fmt "\n",cxb_indent," ", __FUNCTION__, __LINE__, __VA_ARGS__); fflush(cxb); fclose(cxb); \
+    } while (0)
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 
 /*
  * Forward declarations of static functions.
@@ -1299,6 +1374,9 @@ drvgpps(DBC *d, char *sect, char *ent, char *def, char *buf,
 static void
 s3bind(DBC *d, sqlite3_stmt *stmt, int nparams, BINDPARM *p)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i;
 
     if (stmt && p && nparams > 0) {
@@ -1362,6 +1440,8 @@ s3bind(DBC *d, sqlite3_stmt *stmt, int nparams, BINDPARM *p)
 	    }
 	}
     }
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -1391,6 +1471,9 @@ typedef struct tblres {
 static int
 drvgettable_row(TBLRES *t, int ncol, int rc)
 {
+
+    TRACE_CXB_PLUS("START ncol %d rc %d", ncol, rc);
+    
     int need;
     int i;
     char *p;
@@ -1416,6 +1499,11 @@ nomem:
 	t->nalloc = nalloc;
 	t->resarr = resnew;
     }
+    
+
+    TRACE_CXB("is first row t->nrow == 0 --> %d",t->nrow);
+
+    
     /* column names when first row */
     if (t->nrow == 0) {
 	t->ncol = ncol;
@@ -1429,6 +1517,9 @@ nomem:
 		}
 		strcpy(q, p);
 		p = q;
+
+    TRACE_CXB("col %d sqlite3_column_name %s",i,p);
+
 	    }
 	    t->resarr[t->ndata++] = p;
 	}
@@ -1445,13 +1536,22 @@ nomem:
 	t->rc = SQLITE_ERROR;
 	return 1;
     }
+
+    TRACE_CXB("copy row data rc == SQLITE_ROW --> %d == %d",rc, SQLITE_ROW);
+
     /* copy row data */
     if (rc == SQLITE_ROW) {
 	for (i = 0; i < ncol; i++) {
 	    int coltype = sqlite3_column_type(t->stmt, i);
 
+
+    TRACE_CXB(" row %d col %d of %d coltype %d", t->nrow, i, (ncol-1), coltype);
+
 	    p = NULL;
 	    if (coltype == SQLITE_BLOB) {
+
+    TRACE_CXB("SQLITE_BLOB");
+
 		int k, nbytes = sqlite3_column_bytes(t->stmt, i);
 		char *qp;
 		unsigned const char *bp;
@@ -1495,16 +1595,30 @@ nomem:
 		    goto nomem;
 		}
 #endif
+
+    TRACE_CXB("SQLITE_FLOAT value %s",p);
+
 	    } else if (coltype != SQLITE_NULL) {
 		p = xstrdup((char *) sqlite3_column_text(t->stmt, i));
 		if (!p) {
 		    goto nomem;
 		}
+#ifdef __CXB
+    TRACE_CXB("!= SQLITE_NULL (int=1 text=3) len %d value (%s)",strlen(p),p);
+#endif
+	    } else if (coltype == SQLITE_NULL) {
+#ifdef __CXB
+    TRACE_CXB("== SQLITE_NULL %d",p);
+#endif
+
 	    }
 	    t->resarr[t->ndata++] = p;
 	}
 	t->nrow++;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return 0;
 }
 
@@ -1512,6 +1626,9 @@ static int
 drvgettable(STMT *s, const char *sql, char ***resp, int *nrowp,
 	    int *ncolp, char **errp, int nparam, BINDPARM *p)
 {
+
+    TRACE_CXB_PLUS("START ");
+
     DBC *d = (DBC *) s->dbc;
     int rc = SQLITE_OK, keep = sql == NULL;
     TBLRES tres;
@@ -1519,6 +1636,9 @@ drvgettable(STMT *s, const char *sql, char ***resp, int *nrowp,
     int nretry = 0, haveerr = 0;
 
     if (!resp) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQLITE_ERROR;
     }
     *resp = NULL;
@@ -1538,12 +1658,18 @@ drvgettable(STMT *s, const char *sql, char ***resp, int *nrowp,
     tres.stmt = NULL;
     tres.s = s;
     if (!tres.resarr) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQLITE_NOMEM;
     }
     tres.resarr[0] = 0;
     if (sql == NULL) {
 	tres.stmt = s->s3stmt;
 	if (tres.stmt == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQLITE_NOMEM;
 	}
 	goto retrieve;
@@ -1656,11 +1782,17 @@ tbldone:
 		sqlite3_free(tres.errmsg);
 	    }
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return tres.rc;
     }
     sqlite3_free(tres.errmsg);
     if (rc != SQLITE_OK) {
 	freerows(&tres.resarr[1]);
+
+    TRACE_CXB_MINUS("DONE");
+
 	return rc;
     }
     *resp = &tres.resarr[1];
@@ -1670,7 +1802,10 @@ tbldone:
     if (nrowp) {
 	*nrowp = tres.nrow;
     }
-    return rc;
+ 
+    TRACE_CXB_MINUS("DONE");
+
+   return rc;
 }
 
 /**
@@ -1689,6 +1824,9 @@ static void setstatd(DBC *, int, char *, char *, ...)
 static void
 setstatd(DBC *d, int naterr, char *msg, char *st, ...)
 {
+
+    TRACE_CXB_PLUS("START");
+
     va_list ap;
 
     if (!d) {
@@ -1711,6 +1849,9 @@ setstatd(DBC *d, int naterr, char *msg, char *st, ...)
     }
     strncpy(d->sqlstate, st, 5);
     d->sqlstate[5] = '\0';
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -1729,6 +1870,9 @@ static void setstat(STMT *, int, char *, char *, ...)
 static void
 setstat(STMT *s, int naterr, char *msg, char *st, ...)
 {
+
+    TRACE_CXB_PLUS("START msg %s state %s",msg,st);
+
     va_list ap;
 
     if (!s) {
@@ -1751,6 +1895,9 @@ setstat(STMT *s, int naterr, char *msg, char *st, ...)
     }
     strncpy(s->sqlstate, st, 5);
     s->sqlstate[5] = '\0';
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -1843,6 +1990,9 @@ noconn(STMT *s)
 static double
 ln_strtod(const char *data, char **endp)
 {
+
+    TRACE_CXB_PLUS("START");
+    
     struct lconv *lc = 0;
     char buf[128], *p, *end;
     double value;
@@ -1865,6 +2015,9 @@ ln_strtod(const char *data, char **endp)
     if (endp) {
 	*endp = end;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return value;
 }
 
@@ -1882,6 +2035,9 @@ ln_strtod(const char *data, char **endp)
 static char *
 unquote(char *str)
 {
+
+    TRACE_CXB_PLUS("START");
+    
     if (str) {
 	int len = strlen(str);
 
@@ -1896,6 +2052,9 @@ unquote(char *str)
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return str;
 }
 
@@ -1909,6 +2068,9 @@ unquote(char *str)
 static int
 unescpat(char *str)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *p, *q;
     int count = 0;
 
@@ -1933,6 +2095,9 @@ unescpat(char *str)
 	}
 	p = q + 1;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return count;
 }
 
@@ -1947,6 +2112,9 @@ unescpat(char *str)
 static int
 namematch(char *str, char *pat, int esc)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int cp, ch;
 
     while (1) {
@@ -2005,8 +2173,14 @@ namematch(char *str, char *pat, int esc)
 	}
     }
 match:
+
+    TRACE_CXB_MINUS("DONE");
+
     return 1;
 nomatch:
+
+    TRACE_CXB_MINUS("DONE");
+
     return 0;
 }
 
@@ -2020,6 +2194,9 @@ nomatch:
 static int
 busy_handler(void *udata, int count)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) udata;
     long t1;
     int ret = 0;
@@ -2078,6 +2255,9 @@ busy_handler(void *udata, int count)
 #endif
     ret = 1;
 done:
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -2095,6 +2275,9 @@ done:
 static int
 setsqliteopts(sqlite3 *x, DBC *d)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int count = 0, step = 0, max, rc = SQLITE_ERROR;
 
 #if defined(HAVE_SQLITE3COLUMNTABLENAME) && (HAVE_SQLITE3COLUMNTABLENAME)
@@ -2129,6 +2312,9 @@ setsqliteopts(sqlite3 *x, DBC *d)
 	if (rc != SQLITE_OK) {
 	    if (rc != SQLITE_BUSY ||
 		!busy_handler((void *) d, ++count)) {
+
+    TRACE_CXB_MINUS("DONE");
+
 		return rc;
 	    }
 	    continue;
@@ -2137,6 +2323,9 @@ setsqliteopts(sqlite3 *x, DBC *d)
 	++step;
     }
     sqlite3_busy_handler(x, busy_handler, (void *) d);
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQLITE_OK;
 }
 
@@ -2152,6 +2341,9 @@ setsqliteopts(sqlite3 *x, DBC *d)
 static void
 freerows(char **rowp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     PTRDIFF_T size, i;
 
     if (!rowp) {
@@ -2163,6 +2355,9 @@ freerows(char **rowp)
 	freep(&rowp[i]);
     }
     freep(&rowp);
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -2179,6 +2374,9 @@ static int
 mapsqltype(const char *typename, int *nosign, int ov3, int nowchar,
 	   int dobigint)
 {
+
+    TRACE_CXB_PLUS("START typename %s nosign %d nowchar %d dobigint%d",typename,*nosign,ov3,nowchar,dobigint);
+
     char *p, *q;
     int testsign = 0, result;
 
@@ -2188,10 +2386,16 @@ mapsqltype(const char *typename, int *nosign, int ov3, int nowchar,
     result = SQL_VARCHAR;
 #endif
     if (!typename) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return result;
     }
     q = p = xmalloc(strlen(typename) + 1);
     if (!p) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return result;
     }
     strcpy(p, typename);
@@ -2287,6 +2491,9 @@ mapsqltype(const char *typename, int *nosign, int ov3, int nowchar,
     }
 #endif
     xfree(p);
+
+    TRACE_CXB_MINUS("DONE result %s --> %d", typename, result);
+
     return result;
 }
 
@@ -2302,6 +2509,9 @@ mapsqltype(const char *typename, int *nosign, int ov3, int nowchar,
 static void
 getmd(const char *typename, int sqltype, int *mp, int *dp)
 {
+    
+    TRACE_CXB_PLUS("START ");
+        
     int m = 0, d = 0;
 
     switch (sqltype) {
@@ -2373,6 +2583,9 @@ getmd(const char *typename, int sqltype, int *mp, int *dp)
     if (dp) {
 	*dp = d;
     }
+
+    TRACE_CXB_MINUS("DONE typename %s sqltype %d mp %d dp %d",typename,sqltype,*mp,*dp);
+
 }
 
 /**
@@ -2387,45 +2600,81 @@ getmd(const char *typename, int sqltype, int *mp, int *dp)
 static int
 mapdeftype(int type, int stype, int nosign, int nowchar)
 {
+
+    TRACE_CXB_PLUS("START type %d (%d=SQL_C_DEFAULT) stype %d nosign %d nowchar %d ",type,SQL_C_DEFAULT,stype,nosign,nowchar);
+
     if (type == SQL_C_DEFAULT) {
 	switch (stype) {
 	case SQL_INTEGER:
 	    type = (nosign > 0) ? SQL_C_ULONG : SQL_C_LONG;
+
+    TRACE_CXB("SQL_INTEGER");
+
 	    break;
 	case SQL_TINYINT:
 	    type = (nosign > 0) ? SQL_C_UTINYINT : SQL_C_TINYINT;
+
+    TRACE_CXB("SQL_TINYINT");
+
 	    break;
 	case SQL_SMALLINT:
 	    type = (nosign > 0) ? SQL_C_USHORT : SQL_C_SHORT;
+
+    TRACE_CXB("SQL_SMALLINT");
+
 	    break;
 	case SQL_FLOAT:
 	    type = SQL_C_FLOAT;
+
+    TRACE_CXB("SQL_C_FLOAT");
+
 	    break;
 	case SQL_DOUBLE:
 	    type = SQL_C_DOUBLE;
+
+    TRACE_CXB("SQL_C_DOUBLE");
+
 	    break;
 	case SQL_TIMESTAMP:
 	    type = SQL_C_TIMESTAMP;
+
+    TRACE_CXB("SQL_C_TIMESTAMP");
+
 	    break;
 	case SQL_TIME:
 	    type = SQL_C_TIME;
+
+    TRACE_CXB("SQL_C_TIME");
+
 	    break;
 	case SQL_DATE:
 	    type = SQL_C_DATE;
+
+    TRACE_CXB("SQL_C_DATE");
+
 	    break;
 #ifdef SQL_C_TYPE_TIMESTAMP
 	case SQL_TYPE_TIMESTAMP:
 	    type = SQL_C_TYPE_TIMESTAMP;
+
+    TRACE_CXB("SQL_C_TYPE_TIMESTAMP");
+
 	    break;
 #endif
 #ifdef SQL_C_TYPE_TIME
 	case SQL_TYPE_TIME:
 	    type = SQL_C_TYPE_TIME;
+
+    TRACE_CXB("SQL_C_TYPE_TIME");
+
 	    break;
 #endif
 #ifdef SQL_C_TYPE_DATE
 	case SQL_TYPE_DATE:
 	    type = SQL_C_TYPE_DATE;
+
+    TRACE_CXB("SQL_C_TYPE_DATE");
+
 	    break;
 #endif
 #ifdef WINTERFACE
@@ -2435,21 +2684,33 @@ mapdeftype(int type, int stype, int nosign, int nowchar)
 	case SQL_WLONGVARCHAR:
 #endif
 	    type = nowchar ? SQL_C_CHAR : SQL_C_WCHAR;
+
+    TRACE_CXB("SQL_C_CHAR : SQL_C_WCHAR");
+
 	    break;
 #endif
 	case SQL_BINARY:
 	case SQL_VARBINARY:
 	case SQL_LONGVARBINARY:
 	    type = SQL_C_BINARY;
+
+    TRACE_CXB("SQL_C_BINARY ");
+
 	    break;
 #ifdef SQL_BIT
 	case SQL_BIT:
 	    type = SQL_C_BIT;
+
+    TRACE_CXB("SQL_BIT");
+
 	    break;
 #endif
 #ifdef SQL_BIGINT
 	case SQL_BIGINT:
 	    type = SQL_C_CHAR;
+
+    TRACE_CXB("SQL_BIGINT");
+
 	    break;
 #endif
 	default:
@@ -2458,9 +2719,16 @@ mapdeftype(int type, int stype, int nosign, int nowchar)
 #else
 	    type = SQL_C_CHAR;
 #endif
+
+    TRACE_CXB("SQL_C_CHAR");
+
 	    break;
 	}
+    
     }
+
+    TRACE_CXB_MINUS("DONE type %d",type);
+
     return type;
 }
 
@@ -2473,6 +2741,9 @@ mapdeftype(int type, int stype, int nosign, int nowchar)
 static int
 checkddl(char *sql)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int isddl = 0;
 
     while (*sql && ISSPACE(*sql)) {
@@ -2509,6 +2780,9 @@ checkddl(char *sql)
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return isddl;
 }
 
@@ -2527,6 +2801,9 @@ static char *
 fixupsql(char *sql, int sqlLen, int cte, int *nparam, int *isselect,
 	 char **errmsg)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *q = sql, *qz = NULL, *p, *inq = NULL, *out;
     int np = 0, isddl = -1, size;
 
@@ -2536,6 +2813,9 @@ fixupsql(char *sql, int sqlLen, int cte, int *nparam, int *isselect,
     if (sqlLen != SQL_NTS) {
 	qz = q = xmalloc(sqlLen + 1);
 	if (!qz) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return NULL;
 	}
 	memcpy(q, sql, sqlLen);
@@ -2550,6 +2830,9 @@ fixupsql(char *sql, int sqlLen, int cte, int *nparam, int *isselect,
     if (!p) {
 errout:
 	freep(&qz);
+
+    TRACE_CXB_MINUS("DONE");
+
 	return NULL;
     }
     memset(p, 0, size);
@@ -2754,6 +3037,9 @@ errout:
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return out;
 }
 
@@ -2827,15 +3113,24 @@ replilike(char *sql)
 static int
 findcol(char **cols, int ncols, char *name)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i;
 
     if (cols) {
 	for (i = 0; i < ncols; i++) {
 	    if (strcmp(cols[i], name) == 0) {
+
+        TRACE_CXB_MINUS("DONE found in column %d cols %s == name %s",i,cols[i],name);
+
 		return i;
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE -1");
+
     return -1;
 }
 
@@ -2858,6 +3153,9 @@ findcol(char **cols, int ncols, char *name)
 static void
 fixupdyncols(STMT *s, DBC *d)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i, k;
 #ifndef FULL_METADATA
     int pk, nn, t, r, nrows, ncols;
@@ -2865,12 +3163,18 @@ fixupdyncols(STMT *s, DBC *d)
 #endif
 
     if (!s->dyncols) {
+
+    TRACE_CXB_MINUS("DONE !s->dyncols");
+
 	return;
     }
     /* fixup labels */
     if (!s->longnames) {
-	if (s->dcols > 1) {
-	    char *table = s->dyncols[0].table;
+        
+        TRACE_CXB("fixup labels");
+        
+        if (s->dcols > 1) {
+            char *table = s->dyncols[0].table;
 
 	    for (i = 1; table[0] && i < s->dcols; i++) {
 		if (strcmp(s->dyncols[i].table, table)) {
@@ -2892,29 +3196,57 @@ fixupdyncols(STMT *s, DBC *d)
 		       s->nowchar[0] || s->nowchar[1], s->dobigint);
 	getmd(s->dyncols[i].typename, s->dyncols[i].type,
 	      &s->dyncols[i].size, &s->dyncols[i].prec);
+            TRACE_CXB("col %d label %s type %d size %d",
+                i,
+                s->dyncols[i].label,
+                s->dyncols[i].type,
+                s->dyncols[i].size
+            );
+              
 #ifdef SQL_LONGVARCHAR
 	if (s->dyncols[i].type == SQL_VARCHAR &&
 	    s->dyncols[i].size > 255) {
 	    s->dyncols[i].type = SQL_LONGVARCHAR;
-	}
+            TRACE_CXB("SQL_VARCHAR col %d label %s type %d size %d",
+                i,
+                s->dyncols[i].label,
+                s->dyncols[i].type,
+                s->dyncols[i].size
+            );
+        }
 #endif
 #ifdef WINTERFACE
 #ifdef SQL_WLONGVARCHAR
 	if (s->dyncols[i].type == SQL_WVARCHAR &&
 	    s->dyncols[i].size > 255) {
 	    s->dyncols[i].type = SQL_WLONGVARCHAR;
+            TRACE_CXB("SQL_WVARCHAR col %d label %s type %d size %d",
+                i,
+                s->dyncols[i].label,
+                s->dyncols[i].type,
+                s->dyncols[i].size
+            );
 	}
 #endif
 #endif
 	if (s->dyncols[i].type == SQL_VARBINARY &&
 	    s->dyncols[i].size > 255) {
 	    s->dyncols[i].type = SQL_LONGVARBINARY;
+            TRACE_CXB("SQL_VARBINARY col %d label %s type %d size %d",
+                i,
+                s->dyncols[i].label,
+                s->dyncols[i].type,
+                s->dyncols[i].size
+            );
 	}
     }
 #ifndef FULL_METADATA
     if (s->dcols > array_size(flags)) {
 	flagp = xmalloc(sizeof (flags[0]) * s->dcols);
 	if (flagp == NULL) {
+
+        TRACE_CXB_MINUS("DONE flagp == NULL --> xmalloc failed!");
+
 	    return;
 	}
     } else {
@@ -2941,6 +3273,9 @@ fixupdyncols(STMT *s, DBC *d)
 	}
 	dbtraceapi(d, "sqlite3_get_table", sql);
 	ret = sqlite3_get_table(d->sqlite, sql, &rowp, &nrows, &ncols, NULL);
+
+        TRACE_CXB("sqlite3_get_table ret %d sql %s nrows %d ncols %d",ret, sql,nrows,ncols);
+
 	sqlite3_free(sql);
 	if (ret != SQLITE_OK) {
 	    continue;
@@ -2965,9 +3300,22 @@ fixupdyncols(STMT *s, DBC *d)
 			colname = dotp + 1;
 		    }
 		}
-		if (!flagp[m] &&
+		    // only gets inside here if col name is an alias???
+		    // cxb beginning of skipped code block (added (1==0) to skip)
+		    if ( (1==0) &&
+		    !flagp[m] &&  
 		    strcmp(colname, rowp[r * ncols + k]) == 0 &&
 		    strcmp(s->dyncols[m].table, s->dyncols[i].table) == 0) {
+                    
+                    TRACE_CXB("POSSIBLE WEIRDNESS r %d m %d colname %s table %s type was %d 0x%zx",
+                        r,
+                        m,
+                        colname,
+                        s->dyncols[m].table,
+                        s->dyncols[m].type,
+                        flagp[m]
+                    );
+                    
 		    char *typename = rowp[r * ncols + t];
 
 		    flagp[m] = i + 1;
@@ -3017,6 +3365,14 @@ fixupdyncols(STMT *s, DBC *d)
 		    if (nn >= 0 && rowp[r * ncols + nn][0] != '0') {
 			s->dyncols[m].notnull = SQL_NO_NULLS;
 		    }
+
+                    TRACE_CXB("col %d name %s typename %s type %d size %d",
+                        m,
+                        colname,
+                        s->dyncols[m].typename,
+                        s->dyncols[m].type,
+                        s->dyncols[i].size
+                    );
 		}
 	    }
 	}
@@ -3067,6 +3423,9 @@ freet:
     }
     s->has_pk = k;
 #endif
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -3078,6 +3437,9 @@ freet:
 static void
 convJD2YMD(double jd, DATE_STRUCT *ds)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int z, a, b, c, d, e, x1;
     sqlite_int64 ijd;
 
@@ -3106,6 +3468,9 @@ convJD2YMD(double jd, DATE_STRUCT *ds)
 static void
 convJD2HMS(double jd, TIME_STRUCT *ts, int *fp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int s;
     double ds;
     sqlite_int64 ijd;
@@ -3135,12 +3500,16 @@ convJD2HMS(double jd, TIME_STRUCT *ts, int *fp)
 static int
 getmdays(int year, int month)
 {
+
+    TRACE_CXB_PLUS("START");
+
     static const int mdays[] = {
 	31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
     };
     int mday;
 
     if (month < 1) {
+    TRACE_CXB_MINUS("DONE 0");
 	return 0;
     }
     mday = mdays[(month - 1) % 12];
@@ -3148,6 +3517,7 @@ getmdays(int year, int month)
 	(!(year % 100 == 0) || year % 400 == 0)) {
 	mday++;
     }
+    TRACE_CXB_MINUS("DONE");
     return mday;
 }
 
@@ -3169,6 +3539,9 @@ getmdays(int year, int month)
 static int
 str2date(int jdconv, char *str, DATE_STRUCT *ds)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i, err = 0;
     double jd;
     char *p, *q, sepc = '\0';
@@ -3182,6 +3555,9 @@ str2date(int jdconv, char *str, DATE_STRUCT *ds)
 	    jd = ln_strtod(str, &p);
 	    if (p && p > str) {
 		convJD2YMD(jd, ds);
+		
+        TRACE_CXB_MINUS("DONE 0");
+		
 		return 0;
 	    }
 	}
@@ -3259,11 +3635,20 @@ done:
 	    ds->month = t[0];
 	    if (ds->month >= 1 && ds->month <= 12 &&
 		(ds->day >= 1 || ds->day <= getmdays(ds->year, ds->month))) {
+		
+        TRACE_CXB_MINUS("DONE 0");
+		
 		return 0;
 	    }
 	}
+	
+    TRACE_CXB_MINUS("DONE -1");
+	
 	return -1;
     }
+	
+    TRACE_CXB_MINUS("DONE 0");
+	
     return 0;
 }
 
@@ -3284,6 +3669,9 @@ done:
 static int
 str2time(int jdconv, char *str, TIME_STRUCT *ts)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i, err = 0, ampm = -1;
     double jd;
     char *p, *q;
@@ -3297,6 +3685,9 @@ str2time(int jdconv, char *str, TIME_STRUCT *ts)
 	    jd = ln_strtod(str, &p);
 	    if (p && p > str) {
 		convJD2HMS(jd, ts, 0);
+		
+        TRACE_CXB_MINUS("DONE 0");
+		
 		return 0;
 	    }
 	}
@@ -3378,8 +3769,14 @@ str2time(int jdconv, char *str, TIME_STRUCT *ts)
 done:
     /* final check for overflow */
     if (err || ts->hour > 23 || ts->minute > 59 || ts->second > 59) {
+	
+    TRACE_CXB_MINUS("DONE -1");
+	
 	return -1;
     }
+	
+    TRACE_CXB_MINUS("DONE 0");
+	
     return 0;
 }
 
@@ -3405,6 +3802,9 @@ done:
 static int
 str2timestamp(int jdconv, char *str, TIMESTAMP_STRUCT *tss)
 {
+
+    TRACE_CXB_PLUS("START %s",str);
+
     int i, m, n, err = 0, ampm = -1;
     double jd;
     char *p, *q, in = '\0', sepc = '\0';
@@ -3442,6 +3842,9 @@ str2timestamp(int jdconv, char *str, TIMESTAMP_STRUCT *tss)
 		    tss->minute = ts.minute;
 		    tss->second = ts.second;
 		    tss->fraction = n;
+			
+            TRACE_CXB_MINUS("DONE 0");
+			
 		    return 0;
 		}
 	    }
@@ -3712,6 +4115,9 @@ done:
 	tss->month < 1 || tss->month > 12 ||
 	tss->day < 1 || tss->day > getmdays(tss->year, tss->month) ||
 	tss->hour > 23 || tss->minute > 59 || tss->second > 59) {
+	
+    TRACE_CXB_MINUS("DONE -1");
+	
 	return -1;
     }
     if ((m & 7) > 1) {
@@ -3725,6 +4131,9 @@ done:
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE --> %d %d %d %d %d %d %d",tss->year,tss->month,tss->day,tss->hour,tss->minute,tss->second,tss->fraction);
+
     return ((m & 7) < 1) ? -1 : 0;
 }
 
@@ -3753,6 +4162,9 @@ getbool(char *string)
 static void
 blob_import(sqlite3_context *ctx, int nargs, sqlite3_value **args)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if 0
     DBC *d = (DBC *) sqlite3_user_data(ctx);
 #endif
@@ -3778,6 +4190,9 @@ blob_import(sqlite3_context *ctx, int nargs, sqlite3_value **args)
 	    f = fopen(wname, "rb");
 	} else {
 	    sqlite3_result_error(ctx, "out of memory", -1);
+		
+        TRACE_CXB_MINUS("DONE out of memory");
+		
 	    return;
 	}
 	uc_free(wname);
@@ -3811,6 +4226,9 @@ blob_import(sqlite3_context *ctx, int nargs, sqlite3_value **args)
     } else {
 	sqlite3_result_error(ctx, "no filename given", -1);
     }
+	
+    TRACE_CXB_MINUS("DONE");
+	
 }
 
 /**
@@ -3823,6 +4241,9 @@ blob_import(sqlite3_context *ctx, int nargs, sqlite3_value **args)
 static void
 blob_export(sqlite3_context *ctx, int nargs, sqlite3_value **args)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if 0
     DBC *d = (DBC *) sqlite3_user_data(ctx);
 #endif
@@ -3854,6 +4275,9 @@ blob_export(sqlite3_context *ctx, int nargs, sqlite3_value **args)
 		f = fopen(wname, "wb");
 	    } else {
 		sqlite3_result_error(ctx, "out of memory", -1);
+		
+        TRACE_CXB_MINUS("DONE ERROR");
+		
 		return;
 	    }
 	    uc_free(wname);
@@ -3875,6 +4299,9 @@ blob_export(sqlite3_context *ctx, int nargs, sqlite3_value **args)
     } else {
 	sqlite3_result_null(ctx);
     }
+	
+    TRACE_CXB_MINUS("DONE");
+	
 }
 
 /**
@@ -3971,6 +4398,9 @@ static SQLRETURN
 dbopen(DBC *d, char *name, int isu, char *dsn, char *sflag,
        char *spflag, char *ntflag, char *jmode, char *busy)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *endp = NULL;
     int rc, tmp, busyto = 100000;
 #if defined(HAVE_SQLITE3VFS) && (HAVE_SQLITE3VFS)
@@ -4010,6 +4440,9 @@ dbopen(DBC *d, char *name, int isu, char *dsn, char *sflag,
 	if (!uname) {
 	    rc = SQLITE_NOMEM;
 	    setstatd(d, rc, "out of memory", (*d->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE SQL_ERROR");
+
 	    return SQL_ERROR;
 	}
     }
@@ -4040,6 +4473,9 @@ dbopen(DBC *d, char *name, int isu, char *dsn, char *sflag,
 	    rc = SQLITE_CANTOPEN;
 	    setstatd(d, rc, "cannot open database",
 		     (*d->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE SQL_ERROR cannot open database");
+
 	    return SQL_ERROR;
 	}
 	uc_free(cname);
@@ -4048,6 +4484,9 @@ dbopen(DBC *d, char *name, int isu, char *dsn, char *sflag,
     if (d->nocreat && access(name, 004) < 0) {
 	rc = SQLITE_CANTOPEN;
 	setstatd(d, rc, "cannot open database", (*d->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE SQL_ERROR cannot open database");
+
 	return SQL_ERROR;
     }
 #endif
@@ -4058,6 +4497,9 @@ dbopen(DBC *d, char *name, int isu, char *dsn, char *sflag,
 	if (!wname) {
 	    rc = SQLITE_NOMEM;
 	    setstatd(d, rc, "out of memory", (*d->ov3) ? "HY000" : "S1000");
+
+        TRACE_CXB_MINUS("DONE SQL_ERROR out of memory");
+
 	    return SQL_ERROR;
 	}
 	rc = sqlite3_open16(wname, &d->sqlite);
@@ -4073,6 +4515,9 @@ connfail:
 	    sqlite3_close(d->sqlite);
 	    d->sqlite = NULL;
 	}
+
+    TRACE_CXB_MINUS("DONE SQL_ERROR connect failed");
+
 	return SQL_ERROR;
     }
 #if defined(SQLITE_DYNLOAD) || defined(SQLITE_HAS_CODEC)
@@ -4172,6 +4617,9 @@ connfail:
 			    d, blob_import, 0, 0);
     sqlite3_create_function(d->sqlite, "blob_export", 2, SQLITE_UTF8,
 			    d, blob_export, 0, 0);
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -4184,12 +4632,18 @@ connfail:
 static void
 dbloadext(DBC *d, char *exts)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(HAVE_SQLITE3LOADEXTENSION) && (HAVE_SQLITE3LOADEXTENSION)
     char *p;
     char path[SQL_MAX_MESSAGE_LENGTH];
     int plen = 0;
 
     if (!d->sqlite) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return;
     }
     sqlite3_enable_load_extension(d->sqlite, 1);
@@ -4251,8 +4705,10 @@ dbloadext(DBC *d, char *exts)
 	}
     } while (p);
 #endif /* HAVE_SQLITE3LOADEXTENSION */
-}
 
+    TRACE_CXB_MINUS("DONE");
+
+}
 /**
  * Perform ATTACH commands to same database file
  * @param d DBC pointer
@@ -4303,18 +4759,26 @@ dbattas(DBC *d, char *attas)
 static char *
 s3stmt_coltype(sqlite3_stmt *s3stmt, int col, DBC *d, int *guessed_types)
 {
+
+    TRACE_CXB_PLUS("START col %d",col);
+
     char *typename = (char *) sqlite3_column_decltype(s3stmt, col);
     char guess[64];
 
     guess[0] = '\0';
     if (!typename) {
 	int coltype = sqlite3_column_type(s3stmt, col);
+        
+        TRACE_CXB("sqlite3_column_type coltype %d",coltype);
 
 	if (guessed_types) {
 	    guessed_types[0]++;
 	}
 	if (d->trace) {
 	    sprintf(guess, " (guessed from %d)", coltype);
+            
+            TRACE_CXB("(guessed from %d)", coltype);
+			
 	}
 	switch (coltype) {
 	case SQLITE_INTEGER: typename = "integer"; break;
@@ -4332,6 +4796,9 @@ s3stmt_coltype(sqlite3_stmt *s3stmt, int col, DBC *d, int *guessed_types)
 		guess, typename);
 	fflush(d->trace);
     }
+
+    TRACE_CXB_MINUS("DONE -- column %d type%s: return '%s'", col + 1, guess, typename);
+
     return typename;
 }
 
@@ -4348,6 +4815,9 @@ s3stmt_coltype(sqlite3_stmt *s3stmt, int col, DBC *d, int *guessed_types)
 static void
 s3stmt_addmeta(sqlite3_stmt *s3stmt, int col, DBC *d, COL *ci)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int nn = 0, pk = 0, ai = 0;
     const char *dn = NULL, *tn = NULL, *cn = NULL, *dummy[4];
 
@@ -4396,6 +4866,9 @@ s3stmt_addmeta(sqlite3_stmt *s3stmt, int col, DBC *d, COL *ci)
 static int
 s3stmt_step(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) s->dbc;
     char **rowd = NULL;
     const char *errp = NULL;
@@ -4668,9 +5141,15 @@ killstmt:
 static void
 s3stmt_end(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
 
     if (!s || !s->s3stmt) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return;
     }
     d = (DBC *) s->dbc;
@@ -4686,6 +5165,9 @@ s3stmt_end(STMT *s)
     if (d->cur_s3stmt == s) {
 	d->cur_s3stmt = NULL;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -4696,6 +5178,9 @@ s3stmt_end(STMT *s)
 static void
 s3stmt_end_if(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) s->dbc;
 
     if (d) {
@@ -4704,6 +5189,9 @@ s3stmt_end_if(STMT *s)
     if (d && d->cur_s3stmt == s) {
 	s3stmt_end(s);
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -4714,6 +5202,9 @@ s3stmt_end_if(STMT *s)
 static void
 s3stmt_drop(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (s->s3stmt) {
 	DBC *d = (DBC *) s->dbc;
 
@@ -4724,6 +5215,9 @@ s3stmt_drop(STMT *s)
 	s->s3stmt = NULL;
 	s->s3stmt_rownum = 0;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -4735,6 +5229,9 @@ s3stmt_drop(STMT *s)
 static SQLRETURN
 s3stmt_start(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) s->dbc;
     const char *endp;
     sqlite3_stmt *s3stmt = NULL;
@@ -4800,6 +5297,9 @@ SQLDataSources(SQLHENV env, SQLUSMALLINT dir, SQLCHAR *srvname,
 	       SQLSMALLINT buflen1, SQLSMALLINT *lenp1,
 	       SQLCHAR *desc, SQLSMALLINT buflen2, SQLSMALLINT *lenp2)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (env == SQL_NULL_HENV) {
 	return SQL_INVALID_HANDLE;
     }
@@ -4817,6 +5317,9 @@ SQLDataSourcesW(SQLHENV env, SQLUSMALLINT dir, SQLWCHAR *srvname,
 		SQLSMALLINT buflen1, SQLSMALLINT *lenp1,
 		SQLWCHAR *desc, SQLSMALLINT buflen2, SQLSMALLINT *lenp2)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (env == SQL_NULL_HENV) {
 	return SQL_INVALID_HANDLE;
     }
@@ -4834,6 +5337,9 @@ SQLDrivers(SQLHENV env, SQLUSMALLINT dir, SQLCHAR *drvdesc,
 	   SQLSMALLINT descmax, SQLSMALLINT *desclenp,
 	   SQLCHAR *drvattr, SQLSMALLINT attrmax, SQLSMALLINT *attrlenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (env == SQL_NULL_HENV) {
 	return SQL_INVALID_HANDLE;
     }
@@ -4851,6 +5357,9 @@ SQLDriversW(SQLHENV env, SQLUSMALLINT dir, SQLWCHAR *drvdesc,
 	    SQLSMALLINT descmax, SQLSMALLINT *desclenp,
 	    SQLWCHAR *drvattr, SQLSMALLINT attrmax, SQLSMALLINT *attrlenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (env == SQL_NULL_HENV) {
 	return SQL_INVALID_HANDLE;
     }
@@ -4868,6 +5377,9 @@ SQLBrowseConnect(SQLHDBC dbc, SQLCHAR *connin, SQLSMALLINT conninLen,
 		 SQLCHAR *connout, SQLSMALLINT connoutMax,
 		 SQLSMALLINT *connoutLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -4887,6 +5399,9 @@ SQLBrowseConnectW(SQLHDBC dbc, SQLWCHAR *connin, SQLSMALLINT conninLen,
 		  SQLWCHAR *connout, SQLSMALLINT connoutMax,
 		  SQLSMALLINT *connoutLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -4907,6 +5422,9 @@ SQLBrowseConnectW(SQLHDBC dbc, SQLWCHAR *connin, SQLSMALLINT conninLen,
 static SQLRETURN
 drvputdata(SQLHSTMT stmt, SQLPOINTER data, SQLLEN len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     int i, dlen, done = 0;
     BINDPARM *p;
@@ -5126,6 +5644,9 @@ seqerr:
 SQLRETURN SQL_API
 SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -5142,6 +5663,9 @@ SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN len)
 static SQLRETURN
 freeparams(STMT *s)
 {
+
+    TRACE_CXB("freeparams %d",__LINE__);
+
     if (s->bindparms) {
 	int n;
 
@@ -5167,6 +5691,9 @@ freeparams(STMT *s)
 static SQLRETURN
 setupparam(STMT *s, char *sql, int pnum)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int type, len = 0, needalloc = 0;
     BINDPARM *p;
 
@@ -5508,6 +6035,9 @@ drvbindparam(SQLHSTMT stmt, SQLUSMALLINT pnum, SQLSMALLINT iotype,
 	     SQLSMALLINT scale,
 	     SQLPOINTER data, SQLINTEGER buflen, SQLLEN *len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     BINDPARM *p;
 
@@ -5647,6 +6177,9 @@ SQLBindParameter(SQLHSTMT stmt, SQLUSMALLINT pnum, SQLSMALLINT iotype,
 		 SQLSMALLINT scale,
 		 SQLPOINTER data, SQLLEN buflen, SQLLEN *len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -5676,6 +6209,9 @@ SQLBindParam(SQLHSTMT stmt, SQLUSMALLINT pnum, SQLSMALLINT vtype,
 	     SQLSMALLINT scale, SQLPOINTER val,
 	     SQLLEN *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -5696,6 +6232,9 @@ SQLBindParam(SQLHSTMT stmt, SQLUSMALLINT pnum, SQLSMALLINT vtype,
 SQLRETURN SQL_API
 SQLNumParams(SQLHSTMT stmt, SQLSMALLINT *nparam)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     SQLSMALLINT dummy;
 
@@ -5722,6 +6261,9 @@ SQLNumParams(SQLHSTMT stmt, SQLSMALLINT *nparam)
 static SQLRETURN
 setupparbuf(STMT *s, BINDPARM *p)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (!p->parbuf) {
 	if (*p->lenp == SQL_DATA_AT_EXEC) {
 	    p->len = p->max;
@@ -5756,6 +6298,9 @@ setupparbuf(STMT *s, BINDPARM *p)
 SQLRETURN SQL_API
 SQLParamData(SQLHSTMT stmt, SQLPOINTER *pind)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     int i;
     SQLPOINTER dummy;
@@ -5811,6 +6356,9 @@ SQLRETURN SQL_API
 SQLDescribeParam(SQLHSTMT stmt, SQLUSMALLINT pnum, SQLSMALLINT *dtype,
 		 SQLULEN *size, SQLSMALLINT *decdigits, SQLSMALLINT *nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     SQLRETURN ret = SQL_ERROR;
 
@@ -5877,6 +6425,9 @@ SQLSetParam(SQLHSTMT stmt, SQLUSMALLINT par, SQLSMALLINT type,
 	    SQLSMALLINT sqltype, SQLULEN coldef,
 	    SQLSMALLINT scale, SQLPOINTER val, SQLLEN *nval)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -5894,11 +6445,17 @@ SQLSetParam(SQLHSTMT stmt, SQLUSMALLINT par, SQLSMALLINT type,
 SQLRETURN SQL_API
 SQLParamOptions(SQLHSTMT stmt, SQLULEN rows, SQLULEN *rowp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvunimplstmt(stmt);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -6021,6 +6578,9 @@ static SQLRETURN
 mkresultset(HSTMT stmt, COL *colspec, int ncols, COL *colspec3,
 	    int ncols3, int *nret)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     DBC *d;
 
@@ -6445,6 +7005,9 @@ SQLTablePrivileges(SQLHSTMT stmt,
 		   SQLCHAR *schema, SQLSMALLINT schemaLen,
 		   SQLCHAR *table, SQLSMALLINT tableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL;
 #endif
@@ -6518,6 +7081,9 @@ SQLTablePrivilegesW(SQLHSTMT stmt,
 		    SQLWCHAR *schema, SQLSMALLINT schemaLen,
 		    SQLWCHAR *table, SQLSMALLINT tableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL, *s = NULL, *t = NULL;
     SQLRETURN ret;
 
@@ -6602,6 +7168,9 @@ SQLColumnPrivileges(SQLHSTMT stmt,
 		    SQLCHAR *table, SQLSMALLINT tableLen,
 		    SQLCHAR *column, SQLSMALLINT columnLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -6635,6 +7204,9 @@ SQLColumnPrivilegesW(SQLHSTMT stmt,
 		     SQLWCHAR *table, SQLSMALLINT tableLen,
 		     SQLWCHAR *column, SQLSMALLINT columnLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -6686,6 +7258,9 @@ drvprimarykeys(SQLHSTMT stmt,
 	       SQLCHAR *schema, SQLSMALLINT schemaLen,
 	       SQLCHAR *table, SQLSMALLINT tableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     DBC *d;
     SQLRETURN sret;
@@ -6943,6 +7518,9 @@ SQLPrimaryKeys(SQLHSTMT stmt,
 	       SQLCHAR *schema, SQLSMALLINT schemaLen,
 	       SQLCHAR *table, SQLSMALLINT tableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL;
 #endif
@@ -7014,6 +7592,9 @@ SQLPrimaryKeysW(SQLHSTMT stmt,
 		SQLWCHAR *schema, SQLSMALLINT schemaLen,
 		SQLWCHAR *table, SQLSMALLINT tableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL, *s = NULL, *t = NULL;
     SQLRETURN ret;
 
@@ -7100,6 +7681,9 @@ drvspecialcolumns(SQLHSTMT stmt, SQLUSMALLINT id,
 		  SQLCHAR *table, SQLSMALLINT tableLen,
 		  SQLUSMALLINT scope, SQLUSMALLINT nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     DBC *d;
     SQLRETURN sret;
@@ -7377,6 +7961,9 @@ SQLSpecialColumns(SQLHSTMT stmt, SQLUSMALLINT id,
 		  SQLCHAR *table, SQLSMALLINT tableLen,
 		  SQLUSMALLINT scope, SQLUSMALLINT nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL;
 #endif
@@ -7453,6 +8040,9 @@ SQLSpecialColumnsW(SQLHSTMT stmt, SQLUSMALLINT id,
 		   SQLWCHAR *table, SQLSMALLINT tableLen,
 		   SQLUSMALLINT scope, SQLUSMALLINT nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL, *s = NULL, *t = NULL;
     SQLRETURN ret;
 
@@ -7555,6 +8145,9 @@ drvforeignkeys(SQLHSTMT stmt,
 	       SQLCHAR *FKschema, SQLSMALLINT FKschemaLen,
 	       SQLCHAR *FKtable, SQLSMALLINT FKtableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     DBC *d;
     SQLRETURN sret;
@@ -7948,6 +8541,9 @@ SQLForeignKeys(SQLHSTMT stmt,
 	       SQLCHAR *FKschema, SQLSMALLINT FKschemaLen,
 	       SQLCHAR *FKtable, SQLSMALLINT FKtableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *pc = NULL, *ps = NULL, *pt = NULL;
     char *fc = NULL, *fs = NULL, *ft = NULL;
@@ -8063,6 +8659,9 @@ SQLForeignKeysW(SQLHSTMT stmt,
 		SQLWCHAR *FKschema, SQLSMALLINT FKschemaLen,
 		SQLWCHAR *FKtable, SQLSMALLINT FKtableLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *pc = NULL, *ps = NULL, *pt = NULL;
     char *fc = NULL, *fs = NULL, *ft = NULL;
     SQLRETURN ret;
@@ -8135,13 +8734,22 @@ done:
 static SQLRETURN
 starttran(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int ret = SQL_SUCCESS, rc, busy_count = 0;
     char *errp = NULL;
     DBC *d = (DBC *) s->dbc;
 
     if (!d->autocommit && !d->intrans && !d->trans_disable) {
 begin_again:
+
+    TRACE_CXB_PLUS("sqlite3_exec");
+    
 	rc = sqlite3_exec(d->sqlite, "BEGIN TRANSACTION", NULL, NULL, &errp);
+
+    TRACE_CXB_MINUS("sqlite3_exec rc = %d",rc);
+
 	if (rc == SQLITE_BUSY) {
 	    if (busy_handler((void *) d, ++busy_count)) {
 		if (errp) {
@@ -8164,6 +8772,9 @@ begin_again:
 	    errp = NULL;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE %d",ret);
+
     return ret;
 }
 
@@ -8178,6 +8789,9 @@ begin_again:
 static SQLRETURN
 endtran(DBC *d, SQLSMALLINT comptype, int force)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int ret, busy_count = 0;
     char *sql, *errp = NULL;
 
@@ -8237,6 +8851,9 @@ endtran(DBC *d, SQLSMALLINT comptype, int force)
 static SQLRETURN
 drvendtran(SQLSMALLINT type, SQLHANDLE handle, SQLSMALLINT comptype)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *dbc = NULL;
     int fail = 0;
     SQLRETURN ret;
@@ -8294,6 +8911,9 @@ drvendtran(SQLSMALLINT type, SQLHANDLE handle, SQLSMALLINT comptype)
 SQLRETURN SQL_API
 SQLEndTran(SQLSMALLINT type, SQLHANDLE handle, SQLSMALLINT comptype)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvendtran(type, handle, comptype);
 }
 
@@ -8308,6 +8928,9 @@ SQLEndTran(SQLSMALLINT type, SQLHANDLE handle, SQLSMALLINT comptype)
 SQLRETURN SQL_API
 SQLTransact(SQLHENV env, SQLHDBC dbc, SQLUSMALLINT type)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (dbc != SQL_NULL_HDBC) {
 	return drvendtran(SQL_HANDLE_DBC, (SQLHANDLE) dbc, type);
     }
@@ -8340,6 +8963,9 @@ SQLRETURN SQL_API
 SQLNativeSql(SQLHSTMT stmt, SQLCHAR *sqlin, SQLINTEGER sqlinLen,
 	     SQLCHAR *sql, SQLINTEGER sqlMax, SQLINTEGER *sqlLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int outLen = 0;
     SQLRETURN ret = SQL_SUCCESS;
 
@@ -8384,6 +9010,9 @@ SQLRETURN SQL_API
 SQLNativeSqlW(SQLHSTMT stmt, SQLWCHAR *sqlin, SQLINTEGER sqlinLen,
 	      SQLWCHAR *sql, SQLINTEGER sqlMax, SQLINTEGER *sqlLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int outLen = 0;
     SQLRETURN ret = SQL_SUCCESS;
 
@@ -8457,6 +9086,9 @@ SQLProcedures(SQLHSTMT stmt,
 	      SQLCHAR *schema, SQLSMALLINT schemaLen,
 	      SQLCHAR *proc, SQLSMALLINT procLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -8486,6 +9118,9 @@ SQLProceduresW(SQLHSTMT stmt,
 	       SQLWCHAR *schema, SQLSMALLINT schemaLen,
 	       SQLWCHAR *proc, SQLSMALLINT procLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -8566,6 +9201,9 @@ SQLProcedureColumns(SQLHSTMT stmt,
 		    SQLCHAR *proc, SQLSMALLINT procLen,
 		    SQLCHAR *column, SQLSMALLINT columnLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -8599,6 +9237,9 @@ SQLProcedureColumnsW(SQLHSTMT stmt,
 		     SQLWCHAR *proc, SQLSMALLINT procLen,
 		     SQLWCHAR *column, SQLSMALLINT columnLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -8623,6 +9264,9 @@ SQLRETURN SQL_API
 SQLGetEnvAttr(SQLHENV env, SQLINTEGER attr, SQLPOINTER val,
 	      SQLINTEGER len, SQLINTEGER *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     ENV *e;
     SQLRETURN ret = SQL_ERROR;
 
@@ -8691,14 +9335,23 @@ SQLGetEnvAttr(SQLHENV env, SQLINTEGER attr, SQLPOINTER val,
 SQLRETURN SQL_API
 SQLSetEnvAttr(SQLHENV env, SQLINTEGER attr, SQLPOINTER val, SQLINTEGER len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     ENV *e;
     SQLRETURN ret = SQL_ERROR;
 
     if (env == SQL_NULL_HENV) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     e = (ENV *) env;
     if (!e || e->magic != ENV_MAGIC) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
 #if defined(_WIN32) || defined(_WIN64)
@@ -8738,6 +9391,9 @@ SQLSetEnvAttr(SQLHENV env, SQLINTEGER attr, SQLPOINTER val, SQLINTEGER len)
 #if defined(_WIN32) || defined(_WIN64)
     LeaveCriticalSection(&e->cs);
 #endif
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -8759,6 +9415,9 @@ drvgetdiagrec(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	      SQLCHAR *sqlstate, SQLINTEGER *nativeerr, SQLCHAR *msg,
 	      SQLSMALLINT buflen, SQLSMALLINT *msglen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = NULL;
     STMT *s = NULL;
     int len, naterr;
@@ -8766,6 +9425,9 @@ drvgetdiagrec(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
     SQLRETURN ret = SQL_ERROR;
 
     if (handle == SQL_NULL_HANDLE) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     if (sqlstate) {
@@ -8783,6 +9445,9 @@ drvgetdiagrec(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
     switch (htype) {
     case SQL_HANDLE_ENV:
     case SQL_HANDLE_DESC:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_NO_DATA;
     case SQL_HANDLE_DBC:
 	HDBC_LOCK((SQLHDBC) handle);
@@ -8799,6 +9464,9 @@ drvgetdiagrec(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	naterr = s->naterr;
 	break;
     default:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     if (buflen < 0) {
@@ -8842,6 +9510,9 @@ done:
 	HSTMT_UNLOCK((SQLHSTMT) handle);
 	break;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -8864,6 +9535,9 @@ SQLGetDiagRec(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	      SQLCHAR *sqlstate, SQLINTEGER *nativeerr, SQLCHAR *msg,
 	      SQLSMALLINT buflen, SQLSMALLINT *msglen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvgetdiagrec(htype, handle, recno, sqlstate,
 			 nativeerr, msg, buflen, msglen);
 }
@@ -8890,6 +9564,9 @@ SQLGetDiagRecW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	      SQLWCHAR *sqlstate, SQLINTEGER *nativeerr, SQLWCHAR *msg,
 	      SQLSMALLINT buflen, SQLSMALLINT *msglen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char state[16];
     SQLSMALLINT len;
     SQLRETURN ret;
@@ -8897,6 +9574,9 @@ SQLGetDiagRecW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
     ret = drvgetdiagrec(htype, handle, recno, (SQLCHAR *) state,
 			nativeerr, (SQLCHAR *) msg, buflen, &len);
     if (ret == SQL_SUCCESS) {
+
+    TRACE_CXB("SQL_SUCCESS");
+
 	if (sqlstate) {
 	    uc_from_utf_buf((SQLCHAR *) state, -1, sqlstate,
 			    6 * sizeof (SQLWCHAR));
@@ -8934,6 +9614,9 @@ SQLGetDiagRecW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	    *msglen = len;
 	}
     } else if (ret == SQL_NO_DATA) {
+
+    TRACE_CXB("SQL_NO_DATA");
+
 	if (sqlstate) {
 	    sqlstate[0] = 0;
 	}
@@ -8946,6 +9629,9 @@ SQLGetDiagRecW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	    *msglen = 0;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE msglen %d state %s msg %s",*msglen, (char *)state, (char *)msg);
+
     return ret;
 }
 #endif
@@ -8968,6 +9654,9 @@ drvgetdiagfield(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 		SQLSMALLINT id, SQLPOINTER info,
 		SQLSMALLINT buflen, SQLSMALLINT *stringlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = NULL;
     STMT *s = NULL;
     int len, naterr, strbuf = 1;
@@ -8975,6 +9664,9 @@ drvgetdiagfield(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
     SQLRETURN ret = SQL_ERROR;
 
     if (handle == SQL_NULL_HANDLE) {
+	
+    TRACE_CXB_MINUS("DONE SQL_INVALID_HANDLE");
+	
 	return SQL_INVALID_HANDLE;
     }
     if (stringlen) {
@@ -8983,6 +9675,9 @@ drvgetdiagfield(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
     switch (htype) {
     case SQL_HANDLE_ENV:
     case SQL_HANDLE_DESC:
+	
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA");
+	
 	return SQL_NO_DATA;
     case SQL_HANDLE_DBC:
 	HDBC_LOCK((SQLHDBC) handle);
@@ -9000,6 +9695,9 @@ drvgetdiagfield(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	naterr = s->naterr;
 	break;
     default:
+	
+    TRACE_CXB_MINUS("DONE SQL_INVALID_HANDLE");
+	
 	return SQL_INVALID_HANDLE;
     }
     if (buflen < 0) {
@@ -9124,6 +9822,9 @@ done:
 	HSTMT_UNLOCK((SQLHSTMT) handle);
 	break;
     }
+	
+    TRACE_CXB_MINUS("DONE");
+	
     return ret;
 }
 
@@ -9145,6 +9846,9 @@ SQLGetDiagField(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 		SQLSMALLINT id, SQLPOINTER info,
 		SQLSMALLINT buflen, SQLSMALLINT *stringlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvgetdiagfield(htype, handle, recno, id, info, buflen, stringlen);
 }
 #endif
@@ -9167,6 +9871,9 @@ SQLGetDiagFieldW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 		 SQLSMALLINT id, SQLPOINTER info,
 		 SQLSMALLINT buflen, SQLSMALLINT *stringlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLSMALLINT len;
     SQLRETURN ret;
 
@@ -9224,6 +9931,9 @@ SQLGetDiagFieldW(SQLSMALLINT htype, SQLHANDLE handle, SQLSMALLINT recno,
 	    *stringlen = len;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE recno %d",recno);
+
     return ret;
 }
 #endif
@@ -9242,6 +9952,9 @@ static SQLRETURN
 drvgetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	       SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
     SQLULEN *uval = (SQLULEN *) val;
     SQLINTEGER dummy;
@@ -9257,20 +9970,32 @@ drvgetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
     case SQL_QUERY_TIMEOUT:
 	*uval = 0;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_CURSOR_TYPE:
 	*uval = s->curtype;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_CURSOR_SCROLLABLE:
 	*uval = (s->curtype != SQL_CURSOR_FORWARD_ONLY) ?
 	    SQL_SCROLLABLE : SQL_NONSCROLLABLE;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
 #ifdef SQL_ATTR_CURSOR_SENSITIVITY
     case SQL_ATTR_CURSOR_SENSITIVITY:
 	*uval = SQL_UNSPECIFIED;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
 #endif
     case SQL_ATTR_ROW_NUMBER:
@@ -9281,23 +10006,38 @@ drvgetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	    *uval = (s->rowp < 0) ? SQL_ROW_NUMBER_UNKNOWN : (s->rowp + 1);
 	}
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_ASYNC_ENABLE:
 	*uval = SQL_ASYNC_ENABLE_OFF;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_CONCURRENCY:
 	*uval = SQL_CONCUR_LOCK;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_RETRIEVE_DATA:
 	*uval = s->retr_data;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ROWSET_SIZE:
     case SQL_ATTR_ROW_ARRAY_SIZE:
 	*uval = s->rowset_size;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     /* Needed for some driver managers, but dummies for now */
     case SQL_ATTR_IMP_ROW_DESC:
@@ -9306,73 +10046,122 @@ drvgetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
     case SQL_ATTR_APP_PARAM_DESC:
 	*((SQLHDESC *) uval) = (SQLHDESC) DEAD_MAGIC;
 	*buflen = sizeof (SQLHDESC);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_STATUS_PTR:
 	*((SQLUSMALLINT **) uval) = s->row_status;
 	*buflen = sizeof (SQLUSMALLINT *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_ROWS_FETCHED_PTR:
 	*((SQLULEN **) uval) = s->row_count;
 	*buflen = sizeof (SQLULEN *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_USE_BOOKMARKS: {
 	STMT *s = (STMT *) stmt;
 
 	*(SQLUINTEGER *) uval = s->bkmrk;
 	*buflen = sizeof (SQLUINTEGER);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     }
     case SQL_ATTR_FETCH_BOOKMARK_PTR:
 	*(SQLPOINTER *) uval = s->bkmrkptr;
 	*buflen = sizeof (SQLPOINTER);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
 	*((SQLULEN **) uval) = s->parm_bind_offs;
 	*buflen = sizeof (SQLULEN *);
+    TRACE_CXB_MINUS("DONE ");
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_BIND_TYPE:
 	*((SQLULEN *) uval) = s->parm_bind_type;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_OPERATION_PTR:
 	*((SQLUSMALLINT **) uval) = s->parm_oper;
 	*buflen = sizeof (SQLUSMALLINT *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_STATUS_PTR:
 	*((SQLUSMALLINT **) uval) = s->parm_status;
 	*buflen = sizeof (SQLUSMALLINT *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAMS_PROCESSED_PTR:
 	*((SQLULEN **) uval) = s->parm_proc;
 	*buflen = sizeof (SQLULEN *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAMSET_SIZE:
 	*((SQLULEN *) uval) = s->paramset_size;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_BIND_TYPE:
 	*(SQLULEN *) uval = s->bind_type;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_BIND_OFFSET_PTR:
 	*((SQLULEN **) uval) = s->bind_offs;
 	*buflen = sizeof (SQLULEN *);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_MAX_ROWS:
 	*((SQLULEN *) uval) = s->max_rows;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
     case SQL_ATTR_MAX_LENGTH:
 	*((SQLULEN *) uval) = 1000000000;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
 #ifdef SQL_ATTR_METADATA_ID
     case SQL_ATTR_METADATA_ID:
 	*((SQLULEN *) uval) = SQL_FALSE;
 	*buflen = sizeof (SQLULEN);
+	
+    TRACE_CXB_MINUS("DONE ");
+	
 	return SQL_SUCCESS;
 #endif
     }
+	
+    TRACE_CXB_MINUS("DONE ");
+	
     return drvunimplstmt(stmt);
 }
 
@@ -9391,6 +10180,9 @@ SQLRETURN SQL_API
 SQLGetStmtAttr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	       SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -9415,11 +10207,17 @@ SQLRETURN SQL_API
 SQLGetStmtAttrW(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 		SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvgetstmtattr(stmt, attr, val, bufmax, buflen);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -9437,6 +10235,9 @@ static SQLRETURN
 drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	       SQLINTEGER buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
 #if defined(SQL_BIGINT) && defined(__WORDSIZE) && (__WORDSIZE == 64)
     SQLBIGINT uval;
@@ -9458,6 +10259,9 @@ drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	    val != (SQLPOINTER) SQL_CURSOR_STATIC) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_CURSOR_SCROLLABLE:
 	if (val == (SQLPOINTER) SQL_NONSCROLLABLE) {
@@ -9465,27 +10269,45 @@ drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	} else {
 	    s->curtype = SQL_CURSOR_STATIC;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_ASYNC_ENABLE:
 	if (val != (SQLPOINTER) SQL_ASYNC_ENABLE_OFF) {
     e01s02:
 	    setstat(s, -1, "option value changed", "01S02");
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_SUCCESS_WITH_INFO;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_CONCURRENCY:
 	if (val != (SQLPOINTER) SQL_CONCUR_LOCK) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #ifdef SQL_ATTR_CURSOR_SENSITIVITY
     case SQL_ATTR_CURSOR_SENSITIVITY:
 	if (val != (SQLPOINTER) SQL_UNSPECIFIED) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #endif
     case SQL_ATTR_QUERY_TIMEOUT:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_RETRIEVE_DATA:
 	if (val != (SQLPOINTER) SQL_RD_ON &&
@@ -9493,11 +10315,17 @@ drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	    goto e01s02;
 	}
 	s->retr_data = uval;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ROWSET_SIZE:
     case SQL_ATTR_ROW_ARRAY_SIZE:
 	if (uval < 1) {
 	    setstat(s, -1, "invalid rowset size", "HY000");
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_ERROR;
 	} else {
 	    SQLUSMALLINT *rst = &s->row_status1;
@@ -9505,6 +10333,9 @@ drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	    if (uval > 1) {
 		rst = xmalloc(sizeof (SQLUSMALLINT) * uval);
 		if (!rst) {
+
+    TRACE_CXB_MINUS("DONE");
+
 		    return nomem(s);
 		}
 	    }
@@ -9514,76 +10345,142 @@ drvsetstmtattr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	    s->row_status0 = rst;
 	    s->rowset_size = uval;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_STATUS_PTR:
 	s->row_status = (SQLUSMALLINT *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_ROWS_FETCHED_PTR:
 	s->row_count = (SQLULEN *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_BIND_OFFSET_PTR:
 	s->parm_bind_offs = (SQLULEN *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_BIND_TYPE:
 	s->parm_bind_type = uval;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_OPERATION_PTR:
 	s->parm_oper = (SQLUSMALLINT *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAM_STATUS_PTR:
 	s->parm_status = (SQLUSMALLINT *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAMS_PROCESSED_PTR:
 	s->parm_proc = (SQLULEN *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_PARAMSET_SIZE:
 	if (uval < 1) {
+
+    TRACE_CXB("goto e01s02");
+
 	    goto e01s02;
 	}
 	s->paramset_size = uval;
 	s->paramset_count = 0;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_BIND_TYPE:
 	s->bind_type = uval;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_ROW_BIND_OFFSET_PTR:
 	s->bind_offs = (SQLULEN *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_USE_BOOKMARKS:
 	if (val != (SQLPOINTER) SQL_UB_OFF &&
 	    val != (SQLPOINTER) SQL_UB_ON &&
 	    val != (SQLPOINTER) SQL_UB_VARIABLE) {
+
+        TRACE_CXB("goto e01s02");
+
 	    goto e01s02;
 	}
 	if (*s->ov3 && val == (SQLPOINTER) SQL_UB_VARIABLE) {
 	    s->bkmrk = SQL_UB_VARIABLE;
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_SUCCESS;
 	}
 	if (val == (SQLPOINTER) SQL_UB_VARIABLE) {
 	    s->bkmrk = SQL_UB_ON;
+
+        TRACE_CXB("goto e01s02");
+
 	    goto e01s02;
 	}
 	s->bkmrk = (val == (SQLPOINTER) SQL_UB_ON) ? SQL_UB_ON : SQL_UB_OFF;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_FETCH_BOOKMARK_PTR:
 	s->bkmrkptr = (SQLINTEGER *) val;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_MAX_ROWS:
 	s->max_rows = uval;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_MAX_LENGTH:
 	if (val != (SQLPOINTER) 1000000000) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #ifdef SQL_ATTR_METADATA_ID
     case SQL_ATTR_METADATA_ID:
 	if (val != (SQLPOINTER) SQL_FALSE) {
+
+        TRACE_CXB("goto e01s02");
+
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #endif
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return drvunimplstmt(stmt);
 }
 
@@ -9601,11 +10498,17 @@ SQLRETURN SQL_API
 SQLSetStmtAttr(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 	       SQLINTEGER buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvsetstmtattr(stmt, attr, val, buflen);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -9624,11 +10527,17 @@ SQLRETURN SQL_API
 SQLSetStmtAttrW(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 		SQLINTEGER buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvsetstmtattr(stmt, attr, val, buflen);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -9644,6 +10553,9 @@ SQLSetStmtAttrW(SQLHSTMT stmt, SQLINTEGER attr, SQLPOINTER val,
 static SQLRETURN
 drvgetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
     SQLUINTEGER *ret = (SQLUINTEGER *) param;
 
@@ -9696,6 +10608,9 @@ drvgetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 SQLRETURN SQL_API
 SQLGetStmtOption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -9716,6 +10631,9 @@ SQLGetStmtOption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 SQLRETURN SQL_API
 SQLGetStmtOptionW(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -9736,6 +10654,9 @@ SQLGetStmtOptionW(SQLHSTMT stmt, SQLUSMALLINT opt, SQLPOINTER param)
 static SQLRETURN
 drvsetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLUINTEGER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
 
     switch (opt) {
@@ -9749,26 +10670,44 @@ drvsetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLUINTEGER param)
 	    param != SQL_CURSOR_STATIC) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ASYNC_ENABLE:
 	if (param != SQL_ASYNC_ENABLE_OFF) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_CONCURRENCY:
 	if (param != SQL_CONCUR_LOCK) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_QUERY_TIMEOUT:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_RETRIEVE_DATA:
 	if (param != SQL_RD_ON && param != SQL_RD_OFF) {
     e01s02:
 	    setstat(s, -1, "option value changed", "01S02");
+
+    TRACE_CXB_MINUS("DONE (goto e01s02) option value changed");
+
 	    return SQL_SUCCESS_WITH_INFO;
 	}
 	s->retr_data = (int) param;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ROWSET_SIZE:
     case SQL_ATTR_ROW_ARRAY_SIZE:
@@ -9790,6 +10729,9 @@ drvsetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLUINTEGER param)
 	    s->row_status0 = rst;
 	    s->rowset_size = param;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     case SQL_ATTR_MAX_ROWS:
 	s->max_rows = param;
@@ -9798,8 +10740,14 @@ drvsetstmtoption(SQLHSTMT stmt, SQLUSMALLINT opt, SQLUINTEGER param)
 	if (param != 1000000000) {
 	    goto e01s02;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return drvunimplstmt(stmt);
 }
 
@@ -9815,6 +10763,9 @@ SQLRETURN SQL_API
 SQLSetStmtOption(SQLHSTMT stmt, SQLUSMALLINT opt,
 		 SETSTMTOPTION_LAST_ARG_TYPE param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -9836,6 +10787,9 @@ SQLRETURN SQL_API
 SQLSetStmtOptionW(SQLHSTMT stmt, SQLUSMALLINT opt,
 		  SETSTMTOPTION_LAST_ARG_TYPE param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -9854,6 +10808,9 @@ SQLSetStmtOptionW(SQLHSTMT stmt, SQLUSMALLINT opt,
 static SQLRETURN
 chkunbound(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i;
 
     if (!s->bindcols || s->nbindcols < s->ncols) {
@@ -9885,6 +10842,9 @@ unbound:
 static SQLRETURN
 setposbind(STMT *s, sqlite3_stmt *stmt, int i, int si, int rsi)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) s->dbc;
     SQLPOINTER dp = 0;
     SQLLEN *lp = 0;
@@ -10225,6 +11185,9 @@ setposbind(STMT *s, sqlite3_stmt *stmt, int i, int si, int rsi)
 static SQLRETURN
 setposibind(STMT *s, sqlite3_stmt *stmt, int i, int si, int rsi)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d = (DBC *) s->dbc;
     char **data;
     int pos;
@@ -10262,6 +11225,9 @@ setposibind(STMT *s, sqlite3_stmt *stmt, int i, int si, int rsi)
 static SQLRETURN
 setposrefr(STMT *s, int rsi)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i, withinfo = 0;
     SQLRETURN ret = SQL_SUCCESS;
 
@@ -10328,6 +11294,9 @@ setposrefr(STMT *s, int rsi)
 static SQLRETURN
 drvsetpos(SQLHSTMT stmt, SQLSETPOSIROW row, SQLUSMALLINT op, SQLUSMALLINT lock)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
     DBC *d = (DBC *) s->dbc;
     int rowp, i, k, rc, nretry = 0;
@@ -10673,6 +11642,9 @@ ustmterr:
 SQLRETURN SQL_API
 SQLSetPos(SQLHSTMT stmt, SQLSETPOSIROW row, SQLUSMALLINT op, SQLUSMALLINT lock)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -10691,6 +11663,9 @@ SQLSetPos(SQLHSTMT stmt, SQLSETPOSIROW row, SQLUSMALLINT op, SQLUSMALLINT lock)
 static SQLRETURN
 drvbulkoperations(SQLHSTMT stmt, SQLSMALLINT op)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s = (STMT *) stmt;
     DBC *d = (DBC *) s->dbc;
     int row, i, k, rc, nretry = 0;
@@ -11116,6 +12091,9 @@ ustmterr:
 SQLRETURN SQL_API
 SQLBulkOperations(SQLHSTMT stmt, SQLSMALLINT oper)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -11133,6 +12111,9 @@ SQLRETURN SQL_API
 SQLSetScrollOptions(SQLHSTMT stmt, SQLUSMALLINT concur, SQLLEN rowkeyset,
 		    SQLUSMALLINT rowset)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -11162,6 +12143,9 @@ static SQLRETURN
 drvgetinfo(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
 	   SQLSMALLINT *valLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     char dummyc[301];
     SQLSMALLINT dummy;
@@ -11642,8 +12626,14 @@ drvgetinfo(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
     default:
 	setstatd(d, -1, "unsupported info option %d",
 		 (*d->ov3) ? "HYC00" : "S1C00", type);
+		 
+    TRACE_CXB_MINUS("DONE SQL_ERROR");
+	
 	return SQL_ERROR;
     }
+	
+    TRACE_CXB_MINUS("DONE SQL_SUCCESS");
+	
     return SQL_SUCCESS;
 }
 
@@ -11662,6 +12652,9 @@ SQLRETURN SQL_API
 SQLGetInfo(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
 	   SQLSMALLINT *valLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -11686,6 +12679,9 @@ SQLRETURN SQL_API
 SQLGetInfoW(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
 	    SQLSMALLINT *valLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     SQLSMALLINT len = 0;
 
@@ -11695,6 +12691,7 @@ SQLGetInfoW(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
     if (ret == SQL_SUCCESS) {
 	SQLWCHAR *v = NULL;
 
+    // defined in C:\Program Files (x86)\Windows Kits\10\Include\10.0.22000.0\um\sqlext.h
 	switch (type) {
 	case SQL_USER_NAME:
 	case SQL_DRIVER_ODBC_VER:
@@ -11772,7 +12769,30 @@ SQLGetInfoW(SQLHDBC dbc, SQLUSMALLINT type, SQLPOINTER val, SQLSMALLINT valMax,
 	if (valLen) {
 	    *valLen = len;
 	}
+    
+#ifdef __CXB
+switch(valMax) {
+    case 2:
+        TRACE_CXB("type %d valMax %d value %x",type,valMax,*(short *)val);
+        break;
+    case 4:
+        TRACE_CXB("type %d valMax %d value %x",type,valMax,*(int *)val);
+        break;
+    default:
+    
+#ifdef __CXB
+        char * c;
+        c = uc_to_utf(val,len);
+        TRACE_CXB("type %d valMax %d value %s len %d",type,valMax,c,len);
+        uc_free(c);
+#endif
+}
+#endif
+
     }
+
+    TRACE_CXB_MINUS("DONE %d",ret);
+
     return ret;
 }
 #endif
@@ -11789,10 +12809,16 @@ SQLRETURN SQL_API
 SQLGetFunctions(SQLHDBC dbc, SQLUSMALLINT func,
 		SQLUSMALLINT *flags)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i;
     SQLUSMALLINT exists[100];
 
     if (dbc == SQL_NULL_HDBC) {
+
+    TRACE_CXB("SQL_INVALID_HANDLE DONE\n");
+
 	return SQL_INVALID_HANDLE;
     }
     for (i = 0; i < array_size(exists); i++) {
@@ -11925,6 +12951,9 @@ SQLGetFunctions(SQLHDBC dbc, SQLUSMALLINT func,
 	    }
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -11937,14 +12966,23 @@ SQLGetFunctions(SQLHDBC dbc, SQLUSMALLINT func,
 static SQLRETURN
 drvallocenv(SQLHENV *env)
 {
+
+    TRACE_CXB_PLUS("START");
+
     ENV *e;
 
     if (env == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     e = (ENV *) xmalloc(sizeof (ENV));
     if (e == NULL) {
 	*env = SQL_NULL_HENV;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     e->magic = ENV_MAGIC;
@@ -11959,6 +12997,9 @@ drvallocenv(SQLHENV *env)
 #endif
     e->dbcs = NULL;
     *env = (SQLHENV) e;
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -11971,6 +13012,9 @@ drvallocenv(SQLHENV *env)
 SQLRETURN SQL_API
 SQLAllocEnv(SQLHENV *env)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvallocenv(env);
 }
 
@@ -12019,6 +13063,9 @@ drvfreeenv(SQLHENV env)
 SQLRETURN SQL_API
 SQLFreeEnv(SQLHENV env)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvfreeenv(env);
 }
 
@@ -12032,17 +13079,26 @@ SQLFreeEnv(SQLHENV env)
 static SQLRETURN
 drvallocconnect(SQLHENV env, SQLHDBC *dbc)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     ENV *e;
     const char *verstr;
     int maj = 0, min = 0, lev = 0;
 
     if (dbc == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     d = (DBC *) xmalloc(sizeof (DBC));
     if (d == NULL) {
 	*dbc = SQL_NULL_HDBC;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     memset(d, 0, sizeof (DBC));
@@ -12086,6 +13142,9 @@ drvallocconnect(SQLHENV env, SQLHDBC *dbc)
     d->magic = DBC_MAGIC;
     *dbc = (SQLHDBC) d;
     drvgetgpps(d);
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -12099,6 +13158,9 @@ drvallocconnect(SQLHENV env, SQLHDBC *dbc)
 SQLRETURN SQL_API
 SQLAllocConnect(SQLHENV env, SQLHDBC *dbc)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvallocconnect(env, dbc);
 }
 
@@ -12111,15 +13173,24 @@ SQLAllocConnect(SQLHENV env, SQLHDBC *dbc)
 static SQLRETURN
 drvfreeconnect(SQLHDBC dbc)
 {
+
+    TRACE_CXB_PLUS("START %d",__LINE__);
+
     DBC *d;
     ENV *e;
     SQLRETURN ret = SQL_ERROR;
 
     if (dbc == SQL_NULL_HDBC) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     d = (DBC *) dbc;
     if (d->magic != DBC_MAGIC) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     e = d->env;
@@ -12177,6 +13248,9 @@ done:
 	LeaveCriticalSection(&e->cs);
     }
 #endif
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -12189,6 +13263,9 @@ done:
 SQLRETURN SQL_API
 SQLFreeConnect(SQLHDBC dbc)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvfreeconnect(dbc);
 }
 
@@ -12206,10 +13283,16 @@ static SQLRETURN
 drvgetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		  SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     SQLINTEGER dummy;
 
     if (dbc == SQL_NULL_HDBC) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     d = (DBC *) dbc;
@@ -12327,6 +13410,9 @@ drvgetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 #ifdef SQL_ATTR_METADATA_ID
     case SQL_ATTR_METADATA_ID:
 	*((SQLULEN *) val) = SQL_FALSE;
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #endif
     default:
@@ -12334,8 +13420,14 @@ drvgetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 	*buflen = sizeof (SQLINTEGER);
 	setstatd(d, -1, "unsupported connect attribute %d",
 		 (*d->ov3) ? "HYC00" : "S1C00", (int) attr);
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -12354,11 +13446,17 @@ SQLRETURN SQL_API
 SQLGetConnectAttr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		  SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
     ret = drvgetconnectattr(dbc, attr, val, bufmax, buflen);
     HDBC_UNLOCK(dbc);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -12378,6 +13476,9 @@ SQLRETURN SQL_API
 SQLGetConnectAttrW(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		   SQLINTEGER bufmax, SQLINTEGER *buflen)
 {
+
+    TRACE_CXB_PLUS("START attr %d",attr);
+
     SQLRETURN ret;
     SQLINTEGER len = 0;
 
@@ -12425,6 +13526,29 @@ SQLGetConnectAttrW(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 	}
     }
     HDBC_UNLOCK(dbc);
+    
+#ifdef __CXB
+switch(bufmax) {
+    case 2:
+        TRACE_CXB("attr %d bufmax %d value %x",attr,bufmax,*(short *)val);
+        break;
+    case 4:
+        TRACE_CXB("attr %d bufmax %d value %x",attr,bufmax,*(int *)val);
+        break;
+    default:
+#ifdef __CXB
+        char * c;
+        c = uc_to_utf(val,len);
+        TRACE_CXB("attr %d bufmax %d value %s",attr,bufmax,c);
+        uc_free(c);
+#endif
+
+}
+#endif
+    
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -12442,9 +13566,15 @@ static SQLRETURN
 drvsetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		  SQLINTEGER len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
 
     if (dbc == SQL_NULL_HDBC) {
+	
+    TRACE_CXB_MINUS("DONE SQL_INVALID_HANDLE");
+	
 	return SQL_INVALID_HANDLE;
     }
     d = (DBC *) dbc;
@@ -12452,11 +13582,18 @@ drvsetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
     case SQL_AUTOCOMMIT:
 	d->autocommit = val == (SQLPOINTER) SQL_AUTOCOMMIT_ON;
 	if (d->autocommit && d->intrans) {
+	
+        TRACE_CXB_MINUS("DONE SQL_AUTOCOMMIT_ON");
+		
 	    return endtran(d, SQL_COMMIT, 1);
 	} else if (!d->autocommit) {
 	    s3stmt_end(d->cur_s3stmt);
 	}
 	break;
+	
+    TRACE_CXB_MINUS("DONE SQL_SUCCESS");
+	
+	return SQL_SUCCESS;
 #ifdef SQL_ATTR_METADATA_ID
     case SQL_ATTR_METADATA_ID:
 	if (val == (SQLPOINTER) SQL_FALSE) {
@@ -12466,8 +13603,14 @@ drvsetconnectattr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 #endif
     default:
 	setstatd(d, -1, "option value changed", "01S02");
+
+    TRACE_CXB_MINUS("DONE SQL_SUCCESS_WITH_INFO");
+
 	return SQL_SUCCESS_WITH_INFO;
     }
+
+    TRACE_CXB_MINUS("DONE SQL_SUCCESS");
+
     return SQL_SUCCESS;
 }
 
@@ -12485,6 +13628,9 @@ SQLRETURN SQL_API
 SQLSetConnectAttr(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		  SQLINTEGER len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -12508,11 +13654,17 @@ SQLRETURN SQL_API
 SQLSetConnectAttrW(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 		   SQLINTEGER len)
 {
+
+    TRACE_CXB("attr %d",attr);
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
     ret = drvsetconnectattr(dbc, attr, val, len);
     HDBC_UNLOCK(dbc);
+
+    TRACE_CXB_MINUS("DONE ret %d",ret);
+
     return ret;
 }
 #endif
@@ -12528,6 +13680,9 @@ SQLSetConnectAttrW(SQLHDBC dbc, SQLINTEGER attr, SQLPOINTER val,
 static SQLRETURN
 drvgetconnectoption(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     SQLINTEGER dummy;
 
@@ -12618,6 +13773,9 @@ drvgetconnectoption(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 SQLRETURN SQL_API
 SQLGetConnectOption(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -12639,6 +13797,9 @@ SQLGetConnectOption(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 SQLRETURN SQL_API
 SQLGetConnectOptionW(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -12670,6 +13831,9 @@ SQLGetConnectOptionW(SQLHDBC dbc, SQLUSMALLINT opt, SQLPOINTER param)
 static SQLRETURN
 drvsetconnectoption(SQLHDBC dbc, SQLUSMALLINT opt, SQLUINTEGER param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
 
     if (dbc == SQL_NULL_HDBC) {
@@ -12704,6 +13868,9 @@ drvsetconnectoption(SQLHDBC dbc, SQLUSMALLINT opt, SQLUINTEGER param)
 SQLRETURN SQL_API
 SQLSetConnectOption(SQLHDBC dbc, SQLUSMALLINT opt, SQLULEN param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -12725,6 +13892,9 @@ SQLSetConnectOption(SQLHDBC dbc, SQLUSMALLINT opt, SQLULEN param)
 SQLRETURN SQL_API
 SQLSetConnectOptionW(SQLHDBC dbc, SQLUSMALLINT opt, SQLULEN param)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -12749,6 +13919,9 @@ SQLSetConnectOptionW(SQLHDBC dbc, SQLUSMALLINT opt, SQLULEN param)
 static int
 getdsnattr(char *dsn, char *attr, char *out, int outLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *str = dsn, *start;
     int len = strlen(attr);
 
@@ -12793,6 +13966,9 @@ static SQLRETURN
 drvconnect(SQLHDBC dbc, SQLCHAR *dsn, SQLSMALLINT dsnLen, char *pwd,
 	   int pwdLen, int isu)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     int len;
     SQLRETURN ret;
@@ -12985,6 +14161,9 @@ SQLConnect(SQLHDBC dbc, SQLCHAR *dsn, SQLSMALLINT dsnLen,
 	   SQLCHAR *uid, SQLSMALLINT uidLen,
 	   SQLCHAR *pwd, SQLSMALLINT pwdLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -13012,6 +14191,9 @@ SQLConnectW(SQLHDBC dbc, SQLWCHAR *dsn, SQLSMALLINT dsnLen,
 	    SQLWCHAR *uid, SQLSMALLINT uidLen,
 	    SQLWCHAR *pwd, SQLSMALLINT pwdLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *dsna = NULL;
     char *pwda = NULL;
     SQLRETURN ret;
@@ -13055,6 +14237,9 @@ done:
 static SQLRETURN
 drvdisconnect(SQLHDBC dbc)
 {
+
+    TRACE_CXB("drvdisconnect %d",__LINE__);
+
     DBC *d;
     int rc;
 
@@ -13099,11 +14284,17 @@ drvdisconnect(SQLHDBC dbc)
 SQLRETURN SQL_API
 SQLDisconnect(SQLHDBC dbc)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
     ret = drvdisconnect(dbc);
     HDBC_UNLOCK(dbc);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -13128,6 +14319,9 @@ drvdriverconnect(SQLHDBC dbc, SQLHWND hwnd,
 		 SQLCHAR *connOut, SQLSMALLINT connOutMax,
 		 SQLSMALLINT *connOutLen, SQLUSMALLINT drvcompl)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     int len;
     SQLRETURN ret;
@@ -13385,10 +14579,16 @@ drvdriverconnect(SQLHDBC dbc, SQLHWND hwnd,
 static SQLRETURN
 freestmt(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START freestmt %d",__LINE__);
+
     STMT *s;
     DBC *d;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
@@ -13424,6 +14624,9 @@ freestmt(SQLHSTMT stmt)
 	s->row_status0 = &s->row_status1;
     }
     xfree(s);
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -13437,19 +14640,31 @@ freestmt(SQLHSTMT stmt)
 static SQLRETURN
 drvallocstmt(SQLHDBC dbc, SQLHSTMT *stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     DBC *d;
     STMT *s, *sl, *pl;
 
     if (dbc == SQL_NULL_HDBC) {
+	
+    TRACE_CXB_MINUS("DONE SQL_INVALID_HANDLE");
+	
 	return SQL_INVALID_HANDLE;
     }
     d = (DBC *) dbc;
     if (d->magic != DBC_MAGIC || stmt == NULL) {
+	
+    TRACE_CXB_MINUS("DONESQL_INVALID_HANDLE ");
+	
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) xmalloc(sizeof (STMT));
     if (s == NULL) {
 	*stmt = SQL_NULL_HSTMT;
+	
+    TRACE_CXB_MINUS("DONE SQL_ERROR");
+	
 	return SQL_ERROR;
     }
     *stmt = (SQLHSTMT) s;
@@ -13493,6 +14708,9 @@ drvallocstmt(SQLHDBC dbc, SQLHSTMT *stmt)
     } else {
 	d->stmt = s;
     }
+	
+    TRACE_CXB_MINUS("DONE");
+	
     return SQL_SUCCESS;
 }
 
@@ -13506,6 +14724,9 @@ drvallocstmt(SQLHDBC dbc, SQLHSTMT *stmt)
 SQLRETURN SQL_API
 SQLAllocStmt(SQLHDBC dbc, SQLHSTMT *stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
@@ -13524,11 +14745,17 @@ SQLAllocStmt(SQLHDBC dbc, SQLHSTMT *stmt)
 static SQLRETURN
 drvfreestmt(SQLHSTMT stmt, SQLUSMALLINT opt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     SQLRETURN ret = SQL_SUCCESS;
     SQLHDBC dbc;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     HSTMT_LOCK(stmt);
@@ -13537,24 +14764,42 @@ drvfreestmt(SQLHSTMT stmt, SQLUSMALLINT opt)
     switch (opt) {
     case SQL_RESET_PARAMS:
 	freeparams(s);
+
+    TRACE_CXB("SQL_RESET_PARAMS");
+
 	break;
     case SQL_UNBIND:
 	unbindcols(s);
+
+    TRACE_CXB("SQL_UNBIND");
+
 	break;
     case SQL_CLOSE:
 	s3stmt_end_if(s);
 	freeresult(s, 0);
+
+    TRACE_CXB("SQL_CLOSE");
+
 	break;
     case SQL_DROP:
 	s3stmt_end_if(s);
 	ret = freestmt(stmt);
+
+    TRACE_CXB("SQL_DROP");
+
 	break;
     default:
 	setstat(s, -1, "unsupported option", (*s->ov3) ? "HYC00" : "S1C00");
 	ret = SQL_ERROR;
+
+    TRACE_CXB("unsupported option");
+
 	break;
     }
     HDBC_UNLOCK(dbc);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -13568,7 +14813,15 @@ drvfreestmt(SQLHSTMT stmt, SQLUSMALLINT opt)
 SQLRETURN SQL_API
 SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT opt)
 {
-    return drvfreestmt(stmt, opt);
+
+    TRACE_CXB_PLUS("START");
+
+    SQLRETURN ret = SQL_SUCCESS;
+    ret = drvfreestmt(stmt, opt);
+
+    TRACE_CXB_MINUS("DONE ret %d",ret);
+ 
+    return ret;
 }
 
 /**
@@ -13580,6 +14833,9 @@ SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT opt)
 SQLRETURN SQL_API
 SQLCancel(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (stmt != SQL_NULL_HSTMT) {
 	DBC *d = (DBC *) ((STMT *) stmt)->dbc;
 #if defined(_WIN32) || defined(_WIN64)
@@ -13613,6 +14869,9 @@ static SQLRETURN
 drvgetcursorname(SQLHSTMT stmt, SQLCHAR *cursor, SQLSMALLINT buflen,
 		 SQLSMALLINT *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
 
     if (stmt == SQL_NULL_HSTMT) {
@@ -13649,6 +14908,9 @@ SQLRETURN SQL_API
 SQLGetCursorName(SQLHSTMT stmt, SQLCHAR *cursor, SQLSMALLINT buflen,
 		 SQLSMALLINT *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 #if defined(_WIN32) || defined(_WIN64)
     SQLSMALLINT len = 0;
@@ -13706,6 +14968,9 @@ SQLRETURN SQL_API
 SQLGetCursorNameW(SQLHSTMT stmt, SQLWCHAR *cursor, SQLSMALLINT buflen,
 		  SQLSMALLINT *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     SQLSMALLINT len = 0;
 
@@ -13749,6 +15014,9 @@ done:
 static SQLRETURN
 drvsetcursorname(SQLHSTMT stmt, SQLCHAR *cursor, SQLSMALLINT len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
 
     if (stmt == SQL_NULL_HSTMT) {
@@ -13783,6 +15051,9 @@ drvsetcursorname(SQLHSTMT stmt, SQLCHAR *cursor, SQLSMALLINT len)
 SQLRETURN SQL_API
 SQLSetCursorName(SQLHSTMT stmt, SQLCHAR *cursor, SQLSMALLINT len)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL;
 #endif
@@ -13828,6 +15099,9 @@ done2:
 SQLRETURN SQL_API
 SQLSetCursorNameW(SQLHSTMT stmt, SQLWCHAR *cursor, SQLSMALLINT len)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL;
     SQLRETURN ret;
 
@@ -13856,6 +15130,9 @@ done:
 SQLRETURN SQL_API
 SQLCloseCursor(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drvfreestmt(stmt, SQL_CLOSE);
 }
 
@@ -13870,6 +15147,8 @@ SQLCloseCursor(SQLHSTMT stmt)
 SQLRETURN SQL_API
 SQLAllocHandle(SQLSMALLINT type, SQLHANDLE input, SQLHANDLE *output)
 {
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     switch (type) {
@@ -13882,15 +15161,28 @@ SQLAllocHandle(SQLSMALLINT type, SQLHANDLE input, SQLHANDLE *output)
 		e->ov3 = 1;
 	    }
 	}
+    
+    TRACE_CXB_MINUS("SQL_HANDLE_ENV DONE %d",ret);
+
 	return ret;
     case SQL_HANDLE_DBC:
-	return drvallocconnect((SQLHENV) input, (SQLHDBC *) output);
+    ret = drvallocconnect((SQLHENV) input, (SQLHDBC *) output);
+
+    TRACE_CXB_MINUS("SQL_HANDLE_DBC DONE %d",ret);
+
+	return ret;
     case SQL_HANDLE_STMT:
 	HDBC_LOCK((SQLHDBC) input);
 	ret = drvallocstmt((SQLHDBC) input, (SQLHSTMT *) output);
 	HDBC_UNLOCK((SQLHDBC) input);
+
+    TRACE_CXB_MINUS("SQL_HANDLE_STMT DONE %d",ret);
+
 	return ret;
     }
+
+    TRACE_CXB_MINUS("SQL_ERROR DONE");
+
     return SQL_ERROR;
 }
 
@@ -13904,14 +15196,34 @@ SQLAllocHandle(SQLSMALLINT type, SQLHANDLE input, SQLHANDLE *output)
 SQLRETURN SQL_API
 SQLFreeHandle(SQLSMALLINT type, SQLHANDLE h)
 {
+
+    TRACE_CXB_PLUS("START");
+
+    SQLRETURN ret;
+
     switch (type) {
     case SQL_HANDLE_ENV:
-	return drvfreeenv((SQLHENV) h);
+        ret = drvfreeenv((SQLHENV) h);
+
+    TRACE_CXB_MINUS("DONE SQL_HANDLE_ENV DONE %d",ret);
+
+        return ret;
     case SQL_HANDLE_DBC:
-	return drvfreeconnect((SQLHDBC) h);
+        ret =  drvfreeconnect((SQLHDBC) h);
+
+    TRACE_CXB_MINUS("DONE SQL_HANDLE_DBC DONE %d",ret);
+
+        return ret;
     case SQL_HANDLE_STMT:
-	return drvfreestmt((SQLHSTMT) h, SQL_DROP);
+        ret =  drvfreestmt((SQLHSTMT) h, SQL_DROP);
+
+    TRACE_CXB_MINUS("DONE SQL_HANDLE_STMT DONE %d",ret);
+
+        return ret;
     }
+
+    TRACE_CXB_MINUS("DONE SQL_ERROR DONE");
+
     return SQL_ERROR;
 }
 
@@ -13923,6 +15235,9 @@ SQLFreeHandle(SQLSMALLINT type, SQLHANDLE h)
 static void
 freedyncols(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (s->dyncols) {
 	int i;
 
@@ -13936,6 +15251,9 @@ freedyncols(STMT *s)
 	freep(&s->dyncols);
     }
     s->dcols = 0;
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -13952,6 +15270,9 @@ freedyncols(STMT *s)
 static void
 freeresult(STMT *s, int clrcols)
 {
+
+    TRACE_CXB_PLUS("START");
+
     freep(&s->bincache);
     s->bincell = NULL;
     s->binlen = 0;
@@ -13976,6 +15297,9 @@ freeresult(STMT *s, int clrcols)
 	s->has_pk = -1;
 	s->has_rowid = -1;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -13986,6 +15310,9 @@ freeresult(STMT *s, int clrcols)
 static void
 unbindcols(STMT *s)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int i;
 
     for (i = 0; s->bindcols && i < s->nbindcols; i++) {
@@ -13996,6 +15323,9 @@ unbindcols(STMT *s)
 	s->bindcols[i].index = i;
 	s->bindcols[i].offs = 0;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -14008,6 +15338,9 @@ unbindcols(STMT *s)
 static SQLRETURN
 mkbindcols(STMT *s, int ncols)
 {
+
+    TRACE_CXB_PLUS("START");
+
     if (s->bindcols) {
 	if (s->nbindcols < ncols) {
 	    int i;
@@ -14015,6 +15348,9 @@ mkbindcols(STMT *s, int ncols)
 		xrealloc(s->bindcols, ncols * sizeof (BINDCOL));
 
 	    if (!bindcols) {
+
+    TRACE_CXB_MINUS("DONE");
+
 		return nomem(s);
 	    }
 	    for (i = s->nbindcols; i < ncols; i++) {
@@ -14031,11 +15367,17 @@ mkbindcols(STMT *s, int ncols)
     } else if (ncols > 0) {
 	s->bindcols = (BINDCOL *) xmalloc(ncols * sizeof (BINDCOL));
 	if (!s->bindcols) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return nomem(s);
 	}
 	s->nbindcols = ncols;
 	unbindcols(s);
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -14056,6 +15398,26 @@ static SQLRETURN
 getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	   SQLPOINTER val, SQLINTEGER len, SQLLEN *lenp, int partial)
 {
+    TRACE_CXB_PLUS("START");
+    
+#ifdef __CXB
+    
+    COL *c;
+    c = s->cols + col;
+    
+    TRACE_CXB("row %d of %d col %d of %d --> column '%s' type %d len %d lenp %d",
+        s->rowp,
+        s->nrows,
+        (col+1),
+        s->ncols,
+        c->column,
+        otype,
+        len,
+        *lenp
+    );
+    
+#endif
+
     char **data, valdummy[16];
     SQLLEN dummy;
     SQLINTEGER *ilenp = NULL;
@@ -14065,25 +15427,43 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 
     if (!lenp) {
 	lenp = &dummy;
+
+    TRACE_CXB("lenp %d",*lenp);
+
     }
     /* workaround for JDK 1.7.0 on x86_64 */
     if (((SQLINTEGER *) lenp) + 1 == (SQLINTEGER *) val) {
 	ilenp = (SQLINTEGER *) lenp;
 	lenp = &dummy;
+
+    TRACE_CXB("lenp %d",*lenp);
+
     }
     if (col >= s->ncols) {
 	setstat(s, -1, "invalid column", (*s->ov3) ? "07009" : "S1002");
+
+    TRACE_CXB("invalid column");
+
 	return SQL_ERROR;
     }
     if (s->retr_data != SQL_RD_ON) {
+
+    TRACE_CXB("SQL_SUCCESS");
+
 	return SQL_SUCCESS;
     }
     if (!s->rows) {
 	*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	goto done;
     }
     if (s->rowp < 0 || s->rowp >= s->nrows) {
 	*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	goto done;
     }
     type = mapdeftype(type, s->cols[col].type, s->cols[col].nosign ? 1 : 0,
@@ -14099,8 +15479,14 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	valnull = 1;
 	val = (SQLPOINTER) valdummy;
     }
+    
+    TRACE_CXB("raw data char strlen %d %s",strlen(*data),*data);
+
     if (*data == NULL) {
 	*lenp = SQL_NULL_DATA;
+
+        TRACE_CXB("SQL_NULL_DATA lenp 0x%zx sizeof(lenp) %d ",*(SQLLEN *)lenp,sizeof(*lenp));
+
 	switch (type) {
 	case SQL_C_UTINYINT:
 	case SQL_C_TINYINT:
@@ -14109,40 +15495,64 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	case SQL_C_BIT:
 #endif
 	    *((SQLCHAR *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_BIT",type);
+
 	    break;
 	case SQL_C_USHORT:
 	case SQL_C_SHORT:
 	case SQL_C_SSHORT:
 	    *((SQLSMALLINT *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_SHORT",type);
+
 	    break;
 	case SQL_C_ULONG:
 	case SQL_C_LONG:
 	case SQL_C_SLONG:
 	    *((SQLINTEGER *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_LONG",type);
+
 	    break;
 #ifdef SQL_BIGINT
 	case SQL_C_SBIGINT:
 	case SQL_C_UBIGINT:
 	    *((SQLBIGINT *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_SBIGINT",type);
+
 	    break;
 #endif
 	case SQL_C_FLOAT:
 	    *((float *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_FLOAT",type);
+
 	    break;
 	case SQL_C_DOUBLE:
 	    *((double *) val) = 0;
+
+    TRACE_CXB("%d is SQL_C_DOUBLE",type);
+
 	    break;
 	case SQL_C_BINARY:
 	case SQL_C_CHAR:
 	    if (len > 0) {
 		*((SQLCHAR *) val) = '\0';
 	    }
+
+    TRACE_CXB("%d is SQL_C_CHAR",type);
+
 	    break;
 #ifdef WCHARSUPPORT
 	case SQL_C_WCHAR:
 	    if (len > 0) {
 		*((SQLWCHAR *) val) = '\0';
 	    }
+
+    TRACE_CXB("%d is SQL_C_WCHAR",type);
+
 	    break;
 #endif
 #ifdef SQL_C_TYPE_DATE
@@ -14150,20 +15560,32 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 #endif
 	case SQL_C_DATE:
 	    memset((DATE_STRUCT *) val, 0, sizeof (DATE_STRUCT));
+
+    TRACE_CXB("%d is SQL_C_DATE",type);
+
 	    break;
 #ifdef SQL_C_TYPE_TIME
 	case SQL_C_TYPE_TIME:
 #endif
 	case SQL_C_TIME:
 	    memset((TIME_STRUCT *) val, 0, sizeof (TIME_STRUCT));
+
+    TRACE_CXB("%d is SQL_C_TYPE_TIME",type);
+
 	    break;
 #ifdef SQL_C_TYPE_TIMESTAMP
 	case SQL_C_TYPE_TIMESTAMP:
 #endif
 	case SQL_C_TIMESTAMP:
 	    memset((TIMESTAMP_STRUCT *) val, 0, sizeof (TIMESTAMP_STRUCT));
+
+    TRACE_CXB("%d is SQL_C_TYPE_TIMESTAMP",type);
+
 	    break;
 	default:
+
+    TRACE_CXB("SQL_ERROR");
+
 	    return SQL_ERROR;
 	}
     } else {
@@ -14181,14 +15603,26 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	    *((SQLCHAR *) val) = strtol(*data, &endp, 0);
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLCHAR);
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	    }
+
+    TRACE_CXB("%d is SQL_C_TINYINT",type);
+
 	    break;
 #ifdef SQL_BIT
 	case SQL_C_BIT:
 	    *((SQLCHAR *) val) = getbool(*data);
 	    *lenp = sizeof (SQLCHAR);
+
+    TRACE_CXB("%d is SQL_C_BIT lenp %d",type,*lenp);
+
 	    break;
 #endif
 	case SQL_C_USHORT:
@@ -14197,18 +15631,36 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	    *((SQLSMALLINT *) val) = strtol(*data, &endp, 0);
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLSMALLINT);
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	    }
+
+    TRACE_CXB("%d is SQL_C_SHORT",type);
+
 	    break;
 	case SQL_C_ULONG:
 	case SQL_C_LONG:
 	case SQL_C_SLONG:
 	    *((SQLINTEGER *) val) = strtol(*data, &endp, 0);
+
+    TRACE_CXB("SQL_C_LONG val %d",*((SQLINTEGER *) val));
+        
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_LONG lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLINTEGER);
+
+    TRACE_CXB("SQL_C_LONG SQLINTEGER lenp %d",*lenp);
+
 	    }
 	    break;
 #ifdef SQL_BIGINT
@@ -14216,8 +15668,14 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 #if defined(_WIN32) || defined(_WIN64)
 	    if (sscanf(*data, "%I64u%c", (SQLUBIGINT *) val, &endc) != 1) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQLUBIGINT lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLUBIGINT);
+
+    TRACE_CXB("SQLUBIGINT SQLUBIGINT lenp %d",*lenp);
+
 	    }
 #else
 #ifdef __osf__
@@ -14227,8 +15685,14 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 #endif
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_UBIGINT lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLUBIGINT);
+
+    TRACE_CXB("SQL_C_UBIGINT SQLUBIGINT lenp %d",*lenp);
+
 	    }
 #endif
 	    break;
@@ -14236,8 +15700,14 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 #if defined(_WIN32) || defined(_WIN64)
 	    if (sscanf(*data, "%I64d%c", (SQLBIGINT *) val, &endc) != 1) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_SBIGINT lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLBIGINT);
+
+    TRACE_CXB("SQL_C_SBIGINT lenp %d",*lenp);
+
 	    }
 #else
 #ifdef __osf__
@@ -14247,8 +15717,14 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 #endif
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_SBIGINT lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (SQLBIGINT);
+
+    TRACE_CXB("SQL_C_SBIGINT lenp %d",*lenp);
+
 	    }
 #endif
 	    break;
@@ -14257,16 +15733,28 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 	    *((float *) val) = ln_strtod(*data, &endp);
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_FLOAT lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (float);
+
+    TRACE_CXB("SQL_C_FLOAT float lenp %d",*lenp);
+
 	    }
 	    break;
 	case SQL_C_DOUBLE:
 	    *((double *) val) = ln_strtod(*data, &endp);
 	    if (endp && endp == *data) {
 		*lenp = SQL_NULL_DATA;
+
+    TRACE_CXB("SQL_C_DOUBLE lenp %d",*lenp);
+
 	    } else {
 		*lenp = sizeof (double);
+
+    TRACE_CXB("SQL_C_DOUBLE double lenp %d",*lenp);
+
 	    }
 	    break;
 	case SQL_C_BINARY: {
@@ -14303,6 +15791,9 @@ getrowdata(STMT *s, SQLUSMALLINT col, SQLSMALLINT otype,
 		dlen = dlen / 2;
 		s->bincache = bin = xmalloc(dlen + 1);
 		if (!bin) {
+
+    TRACE_CXB("nomem");
+
 		    return nomem(s);
 		}
 		s->binlen = dlen;
@@ -14324,6 +15815,9 @@ converr:
 			s->binlen = 0;
 			setstat(s, -1, "conversion error",
 				(*s->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB("conversion error");
+
 			return SQL_ERROR;
 		    }
 		    v = x - xdigits;
@@ -14352,16 +15846,28 @@ converr:
 	    }
 	    if (len < 1) {
 		*lenp = dlen;
+
+    TRACE_CXB("lenp %d",*lenp);
+
 	    } else {
 		*lenp = min(len, dlen);
+
+    TRACE_CXB("lenp %d",*lenp);
+
 		if (*lenp == len && *lenp != dlen) {
 		    *lenp = SQL_NO_TOTAL;
+
+    TRACE_CXB("SQL_NO_TOTAL lenp %d",*lenp);
+
 		}
 	    }
 	    if (partial && len && s->bindcols) {
 		if (*lenp == SQL_NO_TOTAL) {
 		    *lenp = dlen;
 		    s->bindcols[col].offs += len;
+
+    TRACE_CXB("data right truncated 1");
+
 		    setstat(s, -1, "data right truncated", "01004");
 		    if (s->bindcols[col].lenp) {
 			*s->bindcols[col].lenp = dlen;
@@ -14373,10 +15879,16 @@ converr:
 	    }
 	    if (*lenp == SQL_NO_TOTAL) {
 		*lenp = dlen;
+
+    TRACE_CXB("data right truncated 2");
+
 		setstat(s, -1, "data right truncated", "01004");
 		sret = SQL_SUCCESS_WITH_INFO;
 		goto done;
 	    }
+
+    TRACE_CXB("%d is SQL_C_BINARY",type);
+
 	    break;
 	}
 	doCHAR:
@@ -14411,34 +15923,68 @@ converr:
 	    switch (type) {
 	    case SQL_C_CHAR:
 		doz = 1;
+
+    TRACE_CXB("%d is WCHARSUPPORT SQL_C_CHAR",type);
+
 		break;
 	    case SQL_C_WCHAR:
 		doz = sizeof (SQLWCHAR);
+
+    TRACE_CXB("%d is WCHARSUPPORT SQL_C_WCHAR",type);
+
 		break;
 	    default:
 		doz = 0;
+
+    TRACE_CXB("%d is default WCHARSUPPORT SQL_C_CHAR",type);
+
 		break;
 	    }
 	    if (type == SQL_C_WCHAR) {
 		ucdata = uc_from_utf(cdata, dlen);
 		if (!ucdata) {
+
+    TRACE_CXB("nomem");
+
 		    return nomem(s);
 		}
 		dlen = uc_strlen(ucdata) * sizeof (SQLWCHAR);
+
+#ifdef __CXB
+        char * c;
+        c = uc_to_utf(val,len);
+        TRACE_CXB("SQL_C_WCHAR dlen %d ucdata %s",dlen,c);
+        uc_free(c);
+#endif
+
 	    }
 #if defined(_WIN32) || defined(_WIN64)
 	    else if (*s->oemcp && type == SQL_C_CHAR) {
 		ucdata = (SQLWCHAR *) utf_to_wmb((char *) cdata, dlen);
 		if (!ucdata) {
+
+    TRACE_CXB("nomem");
+
 		    return nomem(s);
 		}
 		cdata = (SQLCHAR *) ucdata;
 		dlen = strlen((char *) cdata);
+
+    TRACE_CXB("SQL_C_CHAR dlen %d cdata %s",dlen,cdata);
+
 	    }
 #endif
 #else
 	    doz = (type == SQL_C_CHAR) ? 1 : 0;
 #endif
+
+    TRACE_CXB("col %d partial %d len %d bindcols %zx",
+        col,
+        partial,
+        len,
+        s->bindcols
+    );
+
 	    if (partial && len && s->bindcols) {
 		if (s->bindcols[col].offs >= dlen) {
 #ifdef WCHARSUPPORT
@@ -14480,20 +16026,40 @@ converr:
 		strncpy(val, *data + offs, len - doz);
 #endif
 	    }
+        
+    TRACE_CXB("valnul %d len %d dlen %d doz %d",valnull,len,dlen,doz);
+
 	    if (valnull || len < 1) {
 		*lenp = dlen;
 	    } else {
 		*lenp = min(len - doz, dlen);
+
+    TRACE_CXB("len %d - doz %d dlen %d *lenp %d zlen %d",len,doz,dlen,*lenp,zlen);
+
 		if (*lenp == len - doz && *lenp != dlen) {
 		    *lenp = SQL_NO_TOTAL;
+
+    TRACE_CXB("SQL_NO_TOTAL");
+
 		} else if (*lenp < zlen) {
 		    zlen = *lenp;
+
+    TRACE_CXB("updated zlen %d",zlen);
+
 		}
 	    }
 	    if (len && !valnull && doz) {
 #ifdef WCHARSUPPORT
 		if (type == SQL_C_WCHAR) {
 		    ((SQLWCHAR *) val)[zlen / sizeof (SQLWCHAR)] = 0;
+                
+    TRACE_CXB("zlen %d sizeof (SQLWCHAR) %d zlen/sizeof(SQLWCHAR) %d uc_strlen(val) %d",
+        zlen,
+        sizeof (SQLWCHAR),
+        (zlen / sizeof (SQLWCHAR)),
+        uc_strlen(val)
+    );
+
 		} else {
 		    ((char *) val)[zlen] = '\0';
 		}
@@ -14504,11 +16070,22 @@ converr:
 #ifdef WCHARSUPPORT
 	    uc_free(ucdata);
 #endif
+
+    TRACE_CXB("col %d partial %d len %d bindcols %zx",
+        col,
+        partial,
+        len,
+        s->bindcols
+    );
+
 	    if (partial && len && s->bindcols) {
 		if (*lenp == SQL_NO_TOTAL) {
 		    *lenp = dlen;
 		    s->bindcols[col].offs += len - doz;
 		    setstat(s, -1, "data right truncated", "01004");
+
+    TRACE_CXB("data right truncated 3");
+
 		    if (s->bindcols[col].lenp) {
 			*s->bindcols[col].lenp = dlen;
 		    }
@@ -14517,9 +16094,15 @@ converr:
 		}
 		s->bindcols[col].offs += *lenp;
 	    }
+
+    TRACE_CXB("dlen %d *lenp %d",dlen,*lenp);
+
 	    if (*lenp == SQL_NO_TOTAL) {
 		*lenp = dlen;
 		setstat(s, -1, "data right truncated", "01004");
+
+    TRACE_CXB("data right truncated 4 wchar *lenp %d dlen %d should be zlen %d",*lenp,dlen,zlen);
+
 		sret = SQL_SUCCESS_WITH_INFO;
 		goto done;
 	    }
@@ -14534,6 +16117,9 @@ converr:
 	    } else {
 		*lenp = sizeof (DATE_STRUCT);
 	    }
+
+    TRACE_CXB("%d is SQL_C_DATE",type);
+
 	    break;
 #ifdef SQL_C_TYPE_TIME
 	case SQL_C_TYPE_TIME:
@@ -14544,6 +16130,9 @@ converr:
 	    } else {
 		*lenp = sizeof (TIME_STRUCT);
 	    }
+
+    TRACE_CXB("%d is SQL_C_TIME",type);
+
 	    break;
 #ifdef SQL_C_TYPE_TIMESTAMP
 	case SQL_C_TYPE_TIMESTAMP:
@@ -14568,8 +16157,25 @@ converr:
 		((TIMESTAMP_STRUCT *) val)->fraction *= 10000000;
 		break;
 	    }
+
+    TRACE_CXB("%d is SQL_C_TIMESTAMP lenp %d prec %d %d %d %d %d %d %d %d",
+        type,
+        *lenp,
+        s->cols[col].prec,
+        ((TIMESTAMP_STRUCT *) val)->year,
+        ((TIMESTAMP_STRUCT *) val)->month,
+        ((TIMESTAMP_STRUCT *) val)->day,
+        ((TIMESTAMP_STRUCT *) val)->hour,
+        ((TIMESTAMP_STRUCT *) val)->minute,
+        ((TIMESTAMP_STRUCT *) val)->second,
+        ((TIMESTAMP_STRUCT *) val)->fraction
+    );
+
 	    break;
 	default:
+
+    TRACE_CXB("SQL_ERROR");
+
 	    return SQL_ERROR;
 	}
     }
@@ -14578,6 +16184,9 @@ done:
     if (ilenp) {
 	*ilenp = *lenp;
     }
+
+    TRACE_CXB_MINUS("DONE ret %d",sret);
+
     return sret;
 }
 
@@ -14596,10 +16205,16 @@ static SQLRETURN
 drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	   SQLPOINTER val, SQLLEN max, SQLLEN *lenp)
 {
+
+    TRACE_CXB_PLUS("START col %d type %d max %d lenp %d",col, type, max, *lenp);
+
     STMT *s;
     int sz = 0;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE ");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
@@ -14614,6 +16229,9 @@ drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	    if (val && lenp) {
 		*lenp = 0;
 	    }
+
+    TRACE_CXB_MINUS("DONE ");
+
 	    return SQL_SUCCESS;
 	} else if (col == 0 && s->bkmrk == SQL_UB_VARIABLE &&
 		   type == SQL_C_VARBOOKMARK &&
@@ -14626,12 +16244,21 @@ drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	    if (val && lenp) {
 		*lenp = 0;
 	    }
+
+    TRACE_CXB_MINUS("DONE ");
+
 	    return SQL_SUCCESS;
 	}
 	setstat(s, -1, "invalid column", (*s->ov3) ? "07009" : "S1002");
+
+    TRACE_CXB_MINUS("DONE ");
+
 	return SQL_ERROR;
     }
     if (mkbindcols(s, col) != SQL_SUCCESS) {
+
+    TRACE_CXB_MINUS("DONE ");
+
 	return SQL_ERROR;
     }
     --col;
@@ -14710,6 +16337,9 @@ drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	    break;
 	}
 	setstat(s, -1, "invalid type %d", "HY003", type);
+
+    TRACE_CXB_MINUS("DONE ");
+
 	return SQL_ERROR;
     }
     if (val == NULL) {
@@ -14722,6 +16352,9 @@ drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
     } else {
 	if (sz == 0 && max < 0) {
 	    setstat(s, -1, "invalid length", "HY090");
+
+    TRACE_CXB_MINUS("DONE ");
+
 	    return SQL_ERROR;
 	}
 	s->bindcols[col].type = type;
@@ -14733,6 +16366,9 @@ drvbindcol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	    *lenp = 0;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE SQL_SUCCESS");
+
     return SQL_SUCCESS;
 }
 
@@ -14751,11 +16387,17 @@ SQLRETURN SQL_API
 SQLBindCol(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	   SQLPOINTER val, SQLLEN max, SQLLEN *lenp)
 {
+
+    TRACE_CXB_PLUS("START col %d type %d max %d lenp %d",col, type, max, *lenp);
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvbindcol(stmt, col, type, val, max, lenp);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -14800,6 +16442,9 @@ drvtables(SQLHSTMT stmt,
 	  SQLCHAR *table, SQLSMALLINT tableLen,
 	  SQLCHAR *type, SQLSMALLINT typeLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     STMT *s;
     DBC *d;
@@ -15009,6 +16654,9 @@ SQLTables(SQLHSTMT stmt,
 	  SQLCHAR *table, SQLSMALLINT tableLen,
 	  SQLCHAR *type, SQLSMALLINT typeLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL, *y = NULL;
 #endif
@@ -15091,6 +16739,9 @@ SQLTablesW(SQLHSTMT stmt,
 	   SQLWCHAR *table, SQLSMALLINT tableLen,
 	   SQLWCHAR *type, SQLSMALLINT typeLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL, *s = NULL, *t = NULL, *y = NULL;
     SQLRETURN ret;
 
@@ -15202,6 +16853,9 @@ drvcolumns(SQLHSTMT stmt,
 	   SQLCHAR *table, SQLSMALLINT tableLen,
 	   SQLCHAR *col, SQLSMALLINT colLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN sret;
     STMT *s;
     DBC *d;
@@ -15533,6 +17187,9 @@ SQLColumns(SQLHSTMT stmt,
 	   SQLCHAR *table, SQLSMALLINT tableLen,
 	   SQLCHAR *col, SQLSMALLINT colLen)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL, *k = NULL;
 #endif
@@ -15878,6 +17535,9 @@ typeinfosort(const void *a, const void *b)
 static SQLRETURN
 drvgettypeinfo(SQLHSTMT stmt, SQLSMALLINT sqltype)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     STMT *s;
     int asize;
@@ -16077,6 +17737,9 @@ drvgettypeinfo(SQLHSTMT stmt, SQLSMALLINT sqltype)
 SQLRETURN SQL_API
 SQLGetTypeInfo(SQLHSTMT stmt, SQLSMALLINT sqltype)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -16097,6 +17760,9 @@ SQLGetTypeInfo(SQLHSTMT stmt, SQLSMALLINT sqltype)
 SQLRETURN SQL_API
 SQLGetTypeInfoW(SQLHSTMT stmt, SQLSMALLINT sqltype)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
@@ -16162,6 +17828,9 @@ drvstatistics(SQLHSTMT stmt, SQLCHAR *cat, SQLSMALLINT catLen,
 	      SQLCHAR *table, SQLSMALLINT tableLen,
 	      SQLUSMALLINT itype, SQLUSMALLINT resv)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN sret;
     STMT *s;
     DBC *d;
@@ -16440,6 +18109,9 @@ SQLStatistics(SQLHSTMT stmt, SQLCHAR *cat, SQLSMALLINT catLen,
 	      SQLCHAR *table, SQLSMALLINT tableLen,
 	      SQLUSMALLINT itype, SQLUSMALLINT resv)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     char *c = NULL, *s = NULL, *t = NULL;
 #endif
@@ -16513,6 +18185,9 @@ SQLStatisticsW(SQLHSTMT stmt, SQLWCHAR *cat, SQLSMALLINT catLen,
 	       SQLWCHAR *table, SQLSMALLINT tableLen,
 	       SQLUSMALLINT itype, SQLUSMALLINT resv)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *c = NULL, *s = NULL, *t = NULL;
     SQLRETURN ret;
 
@@ -16545,6 +18220,9 @@ done:
     uc_free(s);
     uc_free(c);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE ");
+
     return ret;
 }
 #endif
@@ -16564,14 +18242,23 @@ SQLRETURN SQL_API
 SQLGetData(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
 	   SQLPOINTER val, SQLLEN len, SQLLEN *lenp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     SQLRETURN ret = SQL_ERROR;
 
     HSTMT_LOCK(stmt);
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE ");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
+
+    TRACE_CXB("col %d of %d", col,s->ncols);
+
     if (col == 0 && s->bkmrk != SQL_UB_OFF) {
 	if (s->bkmrk == SQL_UB_ON && type == SQL_C_BOOKMARK) {
 	    *((SQLINTEGER *) val) = s->rowp;
@@ -16609,6 +18296,20 @@ SQLGetData(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT type,
     ret = getrowdata(s, col, type, val, len, lenp, 1);
 done:
     HSTMT_UNLOCK(stmt);
+#ifdef __CXB
+    switch (type) {
+        case -8:
+#ifdef __CXB
+            char * c;
+            c = uc_to_utf(val,*lenp);
+                TRACE_CXB_MINUS("DONE ret %d WCHAR type %d val '%s' lenp %d",ret, type, c,*lenp);
+            uc_free(c);
+#endif
+            break;
+        default:
+            TRACE_CXB_MINUS("DONE ret %d default type %d",ret, type);
+    }
+#endif
     return ret;
 }
 
@@ -16622,6 +18323,9 @@ done:
 static SQLRETURN
 dofetchbind(STMT *s, int rsi)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int ret, i, withinfo = 0;
 
     s->row_status0[rsi] = SQL_ROW_SUCCESS;
@@ -16728,6 +18432,9 @@ dofetchbind(STMT *s, int rsi)
     if (SQL_SUCCEEDED(ret)) {
 	ret = withinfo ? SQL_SUCCESS_WITH_INFO : SQL_SUCCESS;
     }
+
+    TRACE_CXB_MINUS("DONE ret %d",ret);
+
     return ret;
 }
 
@@ -16742,11 +18449,17 @@ dofetchbind(STMT *s, int rsi)
 static SQLRETURN
 drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 {
+
+    TRACE_CXB_PLUS("START orient %d offset %d",orient,offset);
+
     STMT *s;
     int i, withinfo = 0;
     SQLRETURN ret;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB("SQL_NULL_HSTMT SQL_INVALID_HANDLE");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
@@ -16813,6 +18526,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 	switch (orient) {
 	case SQL_FETCH_NEXT:
 	    if (s->nrows < 1) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_NEXT");
+
 		return SQL_NO_DATA;
 	    }
 	    if (s->rowp < 0) {
@@ -16820,28 +18536,43 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 	    }
 	    if (s->rowp >= s->nrows) {
 		s->rowp = s->rowprs = s->nrows;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_NEXT");
+
 		return SQL_NO_DATA;
 	    }
 	    break;
 	case SQL_FETCH_PRIOR:
 	    if (s->nrows < 1 || s->rowp <= 0) {
 		s->rowp = s->rowprs = -1;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_PRIOR");
+
 		return SQL_NO_DATA;
 	    }
 	    s->rowp -= s->rowset_size + 1;
 	    if (s->rowp < -1) {
 		s->rowp = s->rowprs = -1;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_PRIOR");
+
 		return SQL_NO_DATA;
 	    }
 	    break;
 	case SQL_FETCH_FIRST:
 	    if (s->nrows < 1) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_FIRST");
+
 		return SQL_NO_DATA;
 	    }
 	    s->rowp = -1;
 	    break;
 	case SQL_FETCH_LAST:
 	    if (s->nrows < 1) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_LAST");
+
 		return SQL_NO_DATA;
 	    }
 	    s->rowp = s->nrows - s->rowset_size;
@@ -16852,6 +18583,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 	case SQL_FETCH_ABSOLUTE:
 	    if (offset == 0) {
 		s->rowp = s->rowprs = -1;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_ABSOLUTE");
+
 		return SQL_NO_DATA;
 	    } else if (offset < 0) {
 		if (0 - offset <= s->nrows) {
@@ -16859,9 +18593,15 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 		    break;
 		}
 		s->rowp = s->rowprs = -1;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_RELATIVE");
+
 		return SQL_NO_DATA;
 	    } else if (offset > s->nrows) {
 		s->rowp = s->rowprs = s->nrows;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_RELATIVE");
+
 		return SQL_NO_DATA;
 	    }
 	    s->rowp = offset - 1 - 1;
@@ -16871,12 +18611,18 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 		s->rowp += offset * s->rowset_size - 1;
 		if (s->rowp >= s->nrows) {
 		    s->rowp = s->rowprs = s->nrows;
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_RELATIVE");
+
 		    return SQL_NO_DATA;
 		}
 	    } else {
 		s->rowp += offset * s->rowset_size - 1;
 		if (s->rowp < -1) {
 		    s->rowp = s->rowprs = -1;
+ 
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_RELATIVE");
+
 		    return SQL_NO_DATA;
 		}
 	    }
@@ -16884,6 +18630,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 	case SQL_FETCH_BOOKMARK:
 	    if (s->bkmrk == SQL_UB_ON && !s->bkmrkptr) {
 		if (offset < 0 || offset >= s->nrows) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA SQL_FETCH_BOOKMARK");
+
 		    return SQL_NO_DATA;
 		}
 		s->rowp = offset - 1;
@@ -16918,6 +18667,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 		    rowp = *(int *) s->bkmrkptr;
 		}
 		if (rowp + offset < 0 || rowp + offset >= s->nrows) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA");
+
 		    return SQL_NO_DATA;
 		}
 		s->rowp = rowp + offset - 1;
@@ -16927,6 +18679,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 	default:
 	    s->row_status0[0] = SQL_ROW_ERROR;
 	    ret = SQL_ERROR;
+
+    TRACE_CXB("default SQL_ROW_ERROR");
+
 	    goto done;
 	}
 	s->rowprs = s->rowp + 1;
@@ -16936,6 +18691,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 		break;
 	    }
 	    ret = dofetchbind(s, i);
+
+    TRACE_CXB("dofetchbind2 ret %d",ret);
+
 	    if (!SQL_SUCCEEDED(ret)) {
 		break;
 	    } else if (ret == SQL_SUCCESS_WITH_INFO) {
@@ -16946,6 +18704,9 @@ drvfetchscroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLINTEGER offset)
 done:
     if (i == 0) {
 	if (SQL_SUCCEEDED(ret)) {
+
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA ret %d %d",ret,SQL_SUCCEEDED(ret));
+
 	    return SQL_NO_DATA;
 	}
 	return ret;
@@ -16962,6 +18723,9 @@ done2:
     if (s->row_count) {
 	*s->row_count = s->row_count0;
     }
+
+    TRACE_CXB_MINUS("DONE done2: ret %d",ret);
+
     return ret;
 }
 
@@ -16974,11 +18738,17 @@ done2:
 SQLRETURN SQL_API
 SQLFetch(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvfetchscroll(stmt, SQL_FETCH_NEXT, 0);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -16993,11 +18763,17 @@ SQLFetch(SQLHSTMT stmt)
 SQLRETURN SQL_API
 SQLFetchScroll(SQLHSTMT stmt, SQLSMALLINT orient, SQLLEN offset)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvfetchscroll(stmt, orient, offset);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -17015,6 +18791,9 @@ SQLRETURN SQL_API
 SQLExtendedFetch(SQLHSTMT stmt, SQLUSMALLINT orient, SQLROWOFFSET offset,
 		 SQLROWSETSIZE *rowcount, SQLUSMALLINT *rowstatus)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     SQLRETURN ret;
     SQLUSMALLINT *rst;
@@ -17041,6 +18820,9 @@ SQLExtendedFetch(SQLHSTMT stmt, SQLUSMALLINT orient, SQLROWOFFSET offset,
 	*rowcount = s->row_count0;
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE ret %d *rowcount %d",ret,*rowcount);
+
     return ret;
 }
 
@@ -17054,10 +18836,16 @@ SQLExtendedFetch(SQLHSTMT stmt, SQLUSMALLINT orient, SQLROWOFFSET offset,
 SQLRETURN SQL_API
 SQLRowCount(SQLHSTMT stmt, SQLLEN *nrows)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
 
     HSTMT_LOCK(stmt);
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB("SQL_NULL_HSTMT DONE\n");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
@@ -17065,6 +18853,9 @@ SQLRowCount(SQLHSTMT stmt, SQLLEN *nrows)
 	*nrows = s->isselect ? 0 : s->nrows;
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE affected rows %d",*nrows);
+
     return SQL_SUCCESS;
 }
 
@@ -17078,6 +18869,9 @@ SQLRowCount(SQLHSTMT stmt, SQLLEN *nrows)
 SQLRETURN SQL_API
 SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *ncols)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
 
     HSTMT_LOCK(stmt);
@@ -17089,6 +18883,9 @@ SQLNumResultCols(SQLHSTMT stmt, SQLSMALLINT *ncols)
 	*ncols = s->ncols;
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -17112,20 +18909,32 @@ drvdescribecol(SQLHSTMT stmt, SQLUSMALLINT col, SQLCHAR *name,
 	       SQLSMALLINT *type, SQLULEN *size,
 	       SQLSMALLINT *digits, SQLSMALLINT *nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
     STMT *s;
     COL *c;
     int didname = 0;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
     if (!s->cols) {
 	setstat(s, -1, "no columns", (*s->ov3) ? "07009" : "S1002");
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     if (col < 1 || col > s->ncols) {
 	setstat(s, -1, "invalid column", (*s->ov3) ? "07009" : "S1002");
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     c = s->cols + col - 1;
@@ -17170,6 +18979,9 @@ drvdescribecol(SQLHSTMT stmt, SQLUSMALLINT col, SQLCHAR *name,
     if (nullable) {
 	*nullable = 1;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -17194,6 +19006,9 @@ SQLDescribeCol(SQLHSTMT stmt, SQLUSMALLINT col, SQLCHAR *name,
 	       SQLSMALLINT *type, SQLULEN *size,
 	       SQLSMALLINT *digits, SQLSMALLINT *nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
 #if defined(_WIN32) || defined(_WIN64)
     SQLSMALLINT len = 0;
 #endif
@@ -17274,6 +19089,9 @@ SQLDescribeColW(SQLHSTMT stmt, SQLUSMALLINT col, SQLWCHAR *name,
 		SQLSMALLINT *type, SQLULEN *size,
 		SQLSMALLINT *digits, SQLSMALLINT *nullable)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     SQLSMALLINT len = 0;
 
@@ -17316,6 +19134,9 @@ SQLDescribeColW(SQLHSTMT stmt, SQLUSMALLINT col, SQLWCHAR *name,
 	}
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -17337,17 +19158,26 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		 SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		 SQLLEN *val2)
 {
+
+    TRACE_CXB_PLUS("START col %d attribute id %d",col, id);
+
     STMT *s;
     COL *c;
     SQLSMALLINT dummy;
     char *valc = (char *) val;
 
     if (stmt == SQL_NULL_HSTMT) {
-	return SQL_INVALID_HANDLE;
+
+        TRACE_CXB_MINUS("DONE stmt == SQL_NULL_HSTMT");
+
+        return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
     if (!s->cols) {
-	return SQL_ERROR;
+
+        TRACE_CXB_MINUS("DONE !s->cols");
+
+        return SQL_ERROR;
     }
     if (!valLen) {
 	valLen = &dummy;
@@ -17357,6 +19187,9 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	    *val2 = s->ncols;
 	}
 	*valLen = sizeof (int);
+
+        TRACE_CXB_MINUS("DONE id == SQL_COLUMN_COUNT");
+
 	return SQL_SUCCESS;
     }
     if (id == SQL_COLUMN_TYPE && col == 0) {
@@ -17364,6 +19197,9 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	    *val2 = SQL_INTEGER;
 	}
 	*valLen = sizeof (int);
+
+        TRACE_CXB_MINUS("DONE id == SQL_COLUMN_TYPE && col == 0");
+
 	return SQL_SUCCESS;
     }
 #ifdef SQL_DESC_OCTET_LENGTH
@@ -17372,11 +19208,17 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	    *val2 = 4;
 	}
 	*valLen = sizeof (int);
+
+        TRACE_CXB_MINUS("DONE id == SQL_DESC_OCTET_LENGTH && col == 0 valLen %d val2 %d",*valLen,val2);
+
 	return SQL_SUCCESS;
     }
 #endif
     if (col < 1 || col > s->ncols) {
 	setstat(s, -1, "invalid column", (*s->ov3) ? "07009": "S1002");
+
+        TRACE_CXB_MINUS("DONE col < 1 || col > s->ncols");
+
 	return SQL_ERROR;
     }
     c = s->cols + col - 1;
@@ -17389,6 +19231,9 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		valc[valMax - 1] = '\0';
 	    }
 	    *valLen = strlen(c->label);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_LABEL %s %d",col, id, valc, *valLen );
+
 	    goto checkLen;
 	}
 	/* fall through */
@@ -17399,11 +19244,20 @@ drvcolattributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(c->column);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_NAME %s %d",col, id, valc, *valLen );
+
 checkLen:
 	if (*valLen >= valMax) {
 	    setstat(s, -1, "data right truncated", "01004");
+
+    TRACE_CXB_MINUS("DONE data right truncated");
+
 	    return SQL_SUCCESS_WITH_INFO;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_SUCCESS;
 #ifdef SQL_DESC_BASE_COLUMN_NAME
      case SQL_DESC_BASE_COLUMN_NAME:
@@ -17417,6 +19271,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	    *valLen = strlen(c->column);
 	}
+
+    TRACE_CXB("col %d id %d SQL_DESC_BASE_COLUMN_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
 #endif
     case SQL_COLUMN_TYPE:
@@ -17450,18 +19307,27 @@ checkLen:
 	}
 #endif
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_TYPE type %d size %d",col, id, *val2, *valLen );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_DISPLAY_SIZE:
 	if (val2) {
 	    *val2 = c->size;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_DISPLAY_SIZE %s %d",col, id, valc, *valLen );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_UNSIGNED:
 	if (val2) {
 	    *val2 = c->nosign ? SQL_TRUE : SQL_FALSE;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_UNSIGNED  %d  %d",col, id, *val2, *valLen );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_SCALE:
     case SQL_DESC_SCALE:
@@ -17469,6 +19335,9 @@ checkLen:
 	    *val2 = c->scale;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_SCALE %s %d",col, id, valc, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_PRECISION:
     case SQL_DESC_PRECISION:
@@ -17503,18 +19372,27 @@ checkLen:
 	    }
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_PRECISION %s %d",col, id, valc, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_MONEY:
 	if (val2) {
 	    *val2 = SQL_FALSE;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_MONEY %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_AUTO_INCREMENT:
 	if (val2) {
 	    *val2 = c->autoinc;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_AUTO_INCREMENT %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_LENGTH:
     case SQL_DESC_LENGTH:
@@ -17522,6 +19400,9 @@ checkLen:
 	    *val2 = c->size;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_LENGTH %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_NULLABLE:
     case SQL_DESC_NULLABLE:
@@ -17529,30 +19410,45 @@ checkLen:
 	    *val2 = c->notnull;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_NULLABLE %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_SEARCHABLE:
 	if (val2) {
 	    *val2 = SQL_SEARCHABLE;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_SEARCHABLE %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_CASE_SENSITIVE:
 	if (val2) {
 	    *val2 = SQL_TRUE;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_CASE_SENSITIVE %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_UPDATABLE:
 	if (val2) {
 	    *val2 = SQL_TRUE;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_COLUMN_UPDATABLE %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_DESC_COUNT:
 	if (val2) {
 	    *val2 = s->ncols;
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_DESC_COUNT %d %d",col, id, *valLen, *val2 );
+
 	return SQL_SUCCESS;
     case SQL_COLUMN_TYPE_NAME: {
 	char *p = NULL, *tn = c->typename ? c->typename : "varchar";
@@ -17591,6 +19487,9 @@ checkLen:
 		}
 	    }
 	}
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_TYPE_NAME %s %d",col, id, valc, *val2 );
+
 	goto checkLen;
     }
     case SQL_COLUMN_OWNER_NAME:
@@ -17602,6 +19501,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(z);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_OWNER_NAME %s %d",col, id, valc, *val2 );
+
 	goto checkLen;
     }
     case SQL_COLUMN_TABLE_NAME:
@@ -17616,6 +19518,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(c->table);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_TABLE_NAME %s %d",col, id, valc, *val2 );
+
 	goto checkLen;
 #ifdef SQL_DESC_NUM_PREC_RADIX
     case SQL_DESC_NUM_PREC_RADIX:
@@ -17643,10 +19548,17 @@ checkLen:
 	    }
 	}
 	*valLen = sizeof (int);
+
+    TRACE_CXB_MINUS("DONE col %d id %d SQL_DESC_NUM_PREC_RADIX %d %d",col, id, *valLen, *val2 );
+
+    
 	return SQL_SUCCESS;
 #endif
     }
     setstat(s, -1, "unsupported column attributes %d", "HY091", id);
+
+    TRACE_CXB_MINUS("DONE unsupported column attributes %d", id);
+
     return SQL_ERROR;
 }
 
@@ -17668,6 +19580,9 @@ SQLColAttributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		 SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		 SQLLEN *val2)
 {
+
+    TRACE_CXB_PLUS("START %d %d",col, id);
+
 #if defined(_WIN32) || defined(_WIN64)
     SQLSMALLINT len = 0;
 #endif
@@ -17677,6 +19592,9 @@ SQLColAttributes(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 #if defined(_WIN32) || defined(_WIN64)
     if (!((STMT *) stmt)->oemcp[0]) {
 	ret = drvcolattributes(stmt, col, id, val, valMax, valLen, val2);
+	
+    TRACE_CXB("SQLColAttributes %d drvcolattributes col %d id %d val %s valLen %zd val2 %zd",ret, col, id, val, *valLen, *val2);
+	
 	goto done;
     }
     ret = drvcolattributes(stmt, col, id, val, valMax, &len, val2);
@@ -17729,6 +19647,9 @@ done:
     ret = drvcolattributes(stmt, col, id, val, valMax, valLen, val2);
 #endif
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -17751,6 +19672,9 @@ SQLColAttributesW(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		  SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		  SQLLEN *val2)
 {
+
+    TRACE_CXB_PLUS("START %d %d",col, id);
+
     SQLRETURN ret;
     SQLSMALLINT len = 0;
 
@@ -17801,6 +19725,9 @@ SQLColAttributesW(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	}
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE col %d id %d",col, id );
+
     return ret;
 }
 #endif
@@ -17822,9 +19749,20 @@ drvcolattribute(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		SQLPOINTER val2)
 {
+
+    TRACE_CXB_PLUS("START col %d id %d",col, id);
+
+    
     STMT *s;
     COL *c;
+    
+#ifdef _WIN64
+    sqlite_int64 v = 0;
+#else
     int v = 0;
+#endif
+    
+    
     char *valc = (char *) val;
     SQLSMALLINT dummy;
 
@@ -17853,6 +19791,9 @@ drvcolattribute(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(c->db);
+
+    TRACE_CXB("col %d id %d SQL_DESC_CATALOG_NAME %s %d",col, id, valc, *valLen );
+
 checkLen:
 	if (*valLen >= valMax) {
 	    setstat(s, -1, "data right truncated", "01004");
@@ -17862,6 +19803,9 @@ checkLen:
     case SQL_COLUMN_LENGTH:
     case SQL_DESC_LENGTH:
 	v = c->size;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_LENGTH %zd",col, id, v );
+
 	break;
     case SQL_COLUMN_LABEL:
 	if (c->label) {
@@ -17870,6 +19814,9 @@ checkLen:
 		valc[valMax - 1] = '\0';
 	    }
 	    *valLen = strlen(c->label);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_LABEL %s %d",col, id, valc, *valLen );
+
 	    goto checkLen;
 	}
 	/* fall through */
@@ -17880,6 +19827,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(c->column);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
     case SQL_DESC_SCHEMA_NAME: {
 	char *z = "";
@@ -17889,6 +19839,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(z);
+
+    TRACE_CXB("col %d id %d SQL_DESC_SCHEMA_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
     }
 #ifdef SQL_DESC_BASE_COLUMN_NAME
@@ -17901,6 +19854,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	    *valLen = strlen(c->column);
 	}
+
+    TRACE_CXB("col %d id %d SQL_DESC_BASE_COLUMN_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
 #endif
     case SQL_DESC_TYPE_NAME: {
@@ -17940,6 +19896,9 @@ checkLen:
 		}
 	    }
 	}
+
+    TRACE_CXB("col %d id %d SQL_DESC_TYPE_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
     }
     case SQL_DESC_OCTET_LENGTH:
@@ -17953,6 +19912,9 @@ checkLen:
 	    }
 	}
 #endif
+
+    TRACE_CXB("col %d id %d SQL_DESC_OCTET_LENGTH v %d c->size %d",col, id, v, c->size );
+	
 	break;
 #if (SQL_COLUMN_TABLE_NAME != SQL_DESC_TABLE_NAME)
     case SQL_COLUMN_TABLE_NAME:
@@ -17966,6 +19928,9 @@ checkLen:
 	    valc[valMax - 1] = '\0';
 	}
 	*valLen = strlen(c->table);
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_TABLE_NAME %s %d",col, id, valc, *valLen );
+
 	goto checkLen;
     case SQL_DESC_TYPE:
 	v = c->type;
@@ -17986,55 +19951,71 @@ checkLen:
 	    }
 	}
 #endif
+
+    TRACE_CXB("col %d id %d SQL_DESC_TYPE --> %zd",col, id, v);
+
 	break;
     case SQL_DESC_CONCISE_TYPE:
 	switch (c->type) {
 	case SQL_INTEGER:
+            TRACE_CXB("SQL_INTEGER = %d", c->type);
 	    v = SQL_C_LONG;
 	    break;
 	case SQL_TINYINT:
+            TRACE_CXB("SQL_TINYINT = %d", c->type);
 	    v = SQL_C_TINYINT;
 	    break;
 	case SQL_SMALLINT:
+            TRACE_CXB("SQL_SMALLINT = %d", c->type);
 	    v = SQL_C_SHORT;
 	    break;
 	case SQL_FLOAT:
+            TRACE_CXB("SQL_FLOAT = %d", c->type);
 	    v = SQL_C_FLOAT;
 	    break;
 	case SQL_DOUBLE:
+            TRACE_CXB("SQL_DOUBLE = %d", c->type);
 	    v = SQL_C_DOUBLE;
 	    break;
 	case SQL_TIMESTAMP:
+            TRACE_CXB("SQL_TIMESTAMP = %d", c->type);
 	    v = SQL_C_TIMESTAMP;
 	    break;
 	case SQL_TIME:
+            TRACE_CXB("SQL_TIME = %d", c->type);
 	    v = SQL_C_TIME;
 	    break;
 	case SQL_DATE:
+            TRACE_CXB("SQL_DATE = %d", c->type);
 	    v = SQL_C_DATE;
 	    break;
 #ifdef SQL_C_TYPE_TIMESTAMP
 	case SQL_TYPE_TIMESTAMP:
+            TRACE_CXB("SQL_TYPE_TIMESTAMP = %d", c->type);
 	    v = SQL_C_TYPE_TIMESTAMP;
 	    break;
 #endif
 #ifdef SQL_C_TYPE_TIME
 	case SQL_TYPE_TIME:
+            TRACE_CXB("SQL_TYPE_TIME = %d", c->type);
 	    v = SQL_C_TYPE_TIME;
 	    break;
 #endif
 #ifdef SQL_C_TYPE_DATE
 	case SQL_TYPE_DATE:
+            TRACE_CXB("SQL_TYPE_DATE = %d", c->type);
 	    v = SQL_C_TYPE_DATE;
 	    break;
 #endif
 #ifdef SQL_BIT
 	case SQL_BIT:
+            TRACE_CXB("SQL_BIT = %d", c->type);
 	    v = SQL_C_BIT;
 	    break;
 #endif
 #ifdef SQL_BIGINT
 	case SQL_BIGINT:
+            TRACE_CXB("SQL_BIGINT = %d", c->type);
 	    v = SQL_C_SBIGINT;
 	    break;
 #endif
@@ -18044,24 +20025,44 @@ checkLen:
 #else
 	    v = SQL_C_CHAR;
 #endif
-	    break;
+            TRACE_CXB("SQL_C_CHAR = %d", SQL_C_CHAR);
+            TRACE_CXB("SQL_C_WCHAR = %d", SQL_C_WCHAR);
+            break;
 	}
+
+    TRACE_CXB("col %d id %d SQL_DESC_CONCISE_TYPE c->type %d --> %zd",col, id, c->type, v);
+
 	break;
     case SQL_DESC_UPDATABLE:
 	v = SQL_TRUE;
+
+    TRACE_CXB("col %d id %d SQL_DESC_UPDATABLE --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_DISPLAY_SIZE:
 	v = c->size;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_DISPLAY_SIZE --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_UNSIGNED:
 	v = c->nosign ? SQL_TRUE : SQL_FALSE;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_UNSIGNED --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_SEARCHABLE:
 	v = SQL_SEARCHABLE;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_SEARCHABLE --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_SCALE:
     case SQL_DESC_SCALE:
 	v = c->scale;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_SCALE --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_PRECISION:
     case SQL_DESC_PRECISION:
@@ -18093,15 +20094,27 @@ checkLen:
 	    v = c->prec;
 	    break;
 	}
+
+    TRACE_CXB("col %d id %d SQL_TYPE_TIMESTAMP --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_MONEY:
 	v = SQL_FALSE;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_MONEY --> %zd",col, id, v);
+
 	break;
     case SQL_COLUMN_AUTO_INCREMENT:
 	v = c->autoinc;
+
+    TRACE_CXB("col %d id %d SQL_COLUMN_AUTO_INCREMENT --> %zd",col, id, v);
+
 	break;
     case SQL_DESC_NULLABLE:
 	v = c->notnull;
+
+    TRACE_CXB("col %d id %d SQL_DESC_NULLABLE --> %zd",col, id, v);
+
 	break;
 #ifdef SQL_DESC_NUM_PREC_RADIX
     case SQL_DESC_NUM_PREC_RADIX:
@@ -18126,15 +20139,26 @@ checkLen:
 	default:
 	    v = 2;
 	}
+
+    TRACE_CXB("col %d id %d SQL_DESC_NUM_PREC_RADIX --> %zd",col, id, v);
+
 	break;
 #endif
     default:
 	setstat(s, -1, "unsupported column attribute %d", "HY091", id);
+
+    TRACE_CXB("drvcolattribute2 unsupported column attribute %d", id);
+
 	return SQL_ERROR;
     }
     if (val2) {
 	*(SQLLEN *) val2 = v;
     }
+
+
+    TRACE_CXB_MINUS("DONE v  %zd",v);
+
+    
     return SQL_SUCCESS;
 }
 
@@ -18156,6 +20180,9 @@ SQLColAttribute(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		COLATTRIBUTE_LAST_ARG_TYPE val2)
 {
+
+    TRACE_CXB_PLUS("START %d %d",col, id);
+
 #if defined(_WIN32) || defined(_WIN64)
     SQLSMALLINT len = 0;
 #endif
@@ -18238,6 +20265,10 @@ SQLColAttributeW(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 		 SQLPOINTER val, SQLSMALLINT valMax, SQLSMALLINT *valLen,
 		 COLATTRIBUTE_LAST_ARG_TYPE val2)
 {
+
+    TRACE_CXB_PLUS("START");
+
+
     SQLRETURN ret;
     SQLSMALLINT len = 0;
 
@@ -18285,6 +20316,9 @@ SQLColAttributeW(SQLHSTMT stmt, SQLUSMALLINT col, SQLUSMALLINT id,
 	}
     }
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -18307,6 +20341,9 @@ drverror(SQLHENV env, SQLHDBC dbc, SQLHSTMT stmt,
 	 SQLCHAR *sqlState, SQLINTEGER *nativeErr,
 	 SQLCHAR *errmsg, SQLSMALLINT errmax, SQLSMALLINT *errlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLCHAR dummy0[6];
     SQLINTEGER dummy1;
     SQLSMALLINT dummy2;
@@ -18414,6 +20451,9 @@ SQLError(SQLHENV env, SQLHDBC dbc, SQLHSTMT stmt,
 	 SQLCHAR *sqlState, SQLINTEGER *nativeErr,
 	 SQLCHAR *errmsg, SQLSMALLINT errmax, SQLSMALLINT *errlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     return drverror(env, dbc, stmt, sqlState, nativeErr,
 		    errmsg, errmax, errlen);
 }
@@ -18438,6 +20478,9 @@ SQLErrorW(SQLHENV env, SQLHDBC dbc, SQLHSTMT stmt,
 	  SQLWCHAR *sqlState, SQLINTEGER *nativeErr,
 	  SQLWCHAR *errmsg, SQLSMALLINT errmax, SQLSMALLINT *errlen)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char state[16];
     SQLSMALLINT len = 0;
     SQLRETURN ret;
@@ -18505,11 +20548,16 @@ SQLErrorW(SQLHENV env, SQLHDBC dbc, SQLHSTMT stmt,
 SQLRETURN SQL_API
 SQLMoreResults(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START ");
+
     HSTMT_LOCK(stmt);
     if (stmt == SQL_NULL_HSTMT) {
+    TRACE_CXB_MINUS("DONE SQL_INVALID_HANDLE");
 	return SQL_INVALID_HANDLE;
     }
     HSTMT_UNLOCK(stmt);
+    TRACE_CXB_MINUS("DONE SQL_NO_DATA");
     return SQL_NO_DATA;
 }
 
@@ -18524,6 +20572,9 @@ SQLMoreResults(SQLHSTMT stmt)
 static SQLRETURN
 setupdyncols(STMT *s, sqlite3_stmt *s3stmt, int *ncolsp)
 {
+
+    TRACE_CXB_PLUS("START");
+
     int ncols = *ncolsp, guessed_types = 0;
     SQLRETURN ret = SQL_SUCCESS;
 
@@ -18666,6 +20717,9 @@ setupdyncols(STMT *s, sqlite3_stmt *s3stmt, int *ncolsp)
 	    s->guessed_types = guessed_types;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -18680,17 +20734,26 @@ setupdyncols(STMT *s, sqlite3_stmt *s3stmt, int *ncolsp)
 static SQLRETURN
 drvprepare(SQLHSTMT stmt, SQLCHAR *query, SQLINTEGER queryLen)
 {
+
+    TRACE_CXB_PLUS("START %s %d",query, queryLen);
+
     STMT *s;
     DBC *d;
     char *errp = NULL;
     SQLRETURN sret;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
     if (s->dbc == SQL_NULL_HDBC) {
 noconn:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return noconn(s);
     }
     d = s->dbc;
@@ -18701,6 +20764,9 @@ noconn:
     s3stmt_drop(s);
     sret = starttran(s);
     if (sret != SQL_SUCCESS) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return sret;
     }
     freep(&s->query);
@@ -18710,8 +20776,14 @@ noconn:
     if (!s->query) {
 	if (errp) {
 	    setstat(s, -1, "%s", (*s->ov3) ? "HY000" : "S1000", errp);
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_ERROR;
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return nomem(s);
     }
     if (*s->ilike) {
@@ -18753,6 +20825,9 @@ noconn:
 	    }
 	    setstat(s, ret, "%s (%d)", (*s->ov3) ? "HY000" : "S1000",
 		    sqlite3_errmsg(d->sqlite), ret);
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_ERROR;
 	}
 	if (sqlite3_bind_parameter_count(s3stmt) != s->nparams) {
@@ -18760,6 +20835,9 @@ noconn:
 	    sqlite3_finalize(s3stmt);
 	    setstat(s, SQLITE_ERROR, "parameter marker count incorrect",
 		    (*s->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_ERROR;
 	}
 	ncols = sqlite3_column_count(s3stmt);
@@ -18772,6 +20850,9 @@ noconn:
     }
     mkbindcols(s, s->ncols);
     s->paramset_count = 0;
+
+    TRACE_CXB_MINUS("DONE");
+
     return SQL_SUCCESS;
 }
 
@@ -18785,6 +20866,10 @@ noconn:
 static SQLRETURN
 drvexecute(SQLHSTMT stmt, int initial)
 {
+
+    TRACE_CXB_PLUS("START");
+
+
     STMT *s;
     DBC *d;
     char *errp = NULL;
@@ -18792,11 +20877,20 @@ drvexecute(SQLHSTMT stmt, int initial)
     SQLRETURN ret;
 
     if (stmt == SQL_NULL_HSTMT) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     s = (STMT *) stmt;
+    
+    TRACE_CXB("STMT %s",s->query);
+    
     if (s->dbc == SQL_NULL_HDBC) {
 noconn:
+
+    TRACE_CXB_MINUS("DONE");
+
 	return noconn(s);
     }
     d = (DBC *) s->dbc;
@@ -18805,12 +20899,18 @@ noconn:
     }
     if (!s->query) {
 	setstat(s, -1, "no query prepared", (*s->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     if (s->nbindparms < s->nparams) {
 unbound:
 	setstat(s, -1, "unbound parameters in query",
 		(*s->ov3) ? "HY000" : "S1000");
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     for (i = 0; i < s->nparams; i++) {
@@ -18826,6 +20926,9 @@ unbound:
 		*lenp != SQL_NTS && *lenp != SQL_NULL_DATA &&
 		*lenp != SQL_DATA_AT_EXEC) {
 		setstat(s, -1, "invalid length reference", "HY009");
+
+    TRACE_CXB_MINUS("DONE");
+
 		return SQL_ERROR;
 	    }
 	    if (lenp && (*lenp <= SQL_LEN_DATA_AT_EXEC_OFFSET ||
@@ -19016,6 +21119,9 @@ cleanup:
 	ret == SQL_SUCCESS && nrows == 0) {
 	ret = SQL_NO_DATA;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -19031,6 +21137,9 @@ cleanup:
 SQLRETURN SQL_API
 SQLPrepare(SQLHSTMT stmt, SQLCHAR *query, SQLINTEGER queryLen)
 {
+
+    TRACE_CXB_PLUS("START %s %d",query, queryLen);
+
     SQLRETURN ret;
 #if defined(_WIN32) || defined(_WIN64)
     char *q;
@@ -19057,6 +21166,9 @@ done:
     ;
 #endif
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -19076,6 +21188,9 @@ SQLPrepareW(SQLHSTMT stmt, SQLWCHAR *query, SQLINTEGER queryLen)
     SQLRETURN ret;
     char *q = uc_to_utf_c(query, queryLen);
 
+    TRACE_CXB("\n%s %zd",q, queryLen);
+
+    
     HSTMT_LOCK(stmt);
     if (!q) {
 	ret = nomem((STMT *) stmt);
@@ -19085,6 +21200,9 @@ SQLPrepareW(SQLHSTMT stmt, SQLWCHAR *query, SQLINTEGER queryLen)
     uc_free(q);
 done:
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -19098,11 +21216,17 @@ done:
 SQLRETURN SQL_API
 SQLExecute(SQLHSTMT stmt)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HSTMT_LOCK(stmt);
     ret = drvexecute(stmt, 1);
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -19118,6 +21242,10 @@ SQLExecute(SQLHSTMT stmt)
 SQLRETURN SQL_API
 SQLExecDirect(SQLHSTMT stmt, SQLCHAR *query, SQLINTEGER queryLen)
 {
+
+    TRACE_CXB_PLUS("START %s %d",query, queryLen);
+
+
     SQLRETURN ret;
 #if defined(_WIN32) || defined(_WIN64)
     char *q;
@@ -19150,6 +21278,9 @@ done:
     ;
 #endif
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -19169,6 +21300,8 @@ SQLExecDirectW(SQLHSTMT stmt, SQLWCHAR *query, SQLINTEGER queryLen)
     SQLRETURN ret;
     char *q = uc_to_utf_c(query, queryLen);
 
+    TRACE_CXB_PLUS("START %s",q);
+
     HSTMT_LOCK(stmt);
     if (!q) {
 	ret = nomem((STMT *) stmt);
@@ -19181,6 +21314,9 @@ SQLExecDirectW(SQLHSTMT stmt, SQLWCHAR *query, SQLINTEGER queryLen)
     }
 done:
     HSTMT_UNLOCK(stmt);
+
+    TRACE_CXB_MINUS("DONE %d",ret);
+
     return ret;
 }
 #endif
@@ -19280,12 +21416,18 @@ static struct {
 static void
 ParseAttributes(LPCSTR attribs, SETUPDLG *setupdlg)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *str = (char *) attribs, *start, key[MAXKEYLEN];
     int elem, nkey;
 
     while (*str) {
 	start = str;
 	if ((str = strchr(str, '=')) == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return;
 	}
 	elem = -1;
@@ -19315,6 +21457,9 @@ ParseAttributes(LPCSTR attribs, SETUPDLG *setupdlg)
 	}
 	++str;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -19327,9 +21472,15 @@ ParseAttributes(LPCSTR attribs, SETUPDLG *setupdlg)
 static BOOL
 SetDSNAttributes(HWND parent, SETUPDLG *setupdlg)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *dsn = setupdlg->attr[KEY_DSN].attr;
 
     if (setupdlg->newDSN && strlen(dsn) == 0) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return FALSE;
     }
     if (!SQLWriteDSNToIni(dsn, setupdlg->driver)) {
@@ -19343,6 +21494,9 @@ SetDSNAttributes(HWND parent, SETUPDLG *setupdlg)
 		       MB_ICONEXCLAMATION | MB_OK | MB_TASKMODAL |
 		       MB_SETFOREGROUND);
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return FALSE;
     }
     if (parent || setupdlg->attr[KEY_DESC].supplied) {
@@ -19439,6 +21593,9 @@ SetDSNAttributes(HWND parent, SETUPDLG *setupdlg)
 	strcasecmp(setupdlg->DSN, setupdlg->attr[KEY_DSN].attr)) {
 	SQLRemoveDSNFromIni(setupdlg->DSN);
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return TRUE;
 }
 
@@ -19450,6 +21607,9 @@ SetDSNAttributes(HWND parent, SETUPDLG *setupdlg)
 static void
 GetAttributes(SETUPDLG *setupdlg)
 {
+
+    TRACE_CXB_PLUS("START");
+
     char *dsn = setupdlg->attr[KEY_DSN].attr;
 
     if (!setupdlg->attr[KEY_DESC].supplied) {
@@ -19565,6 +21725,9 @@ GetAttributes(SETUPDLG *setupdlg)
 				   setupdlg->attr[KEY_ILIKE].attr,
 				   sizeof (setupdlg->attr[KEY_ILIKE].attr),
 				   ODBC_INI);
+				   
+    TRACE_CXB_MINUS("DONE");
+				   
     }
 }
 
@@ -19576,6 +21739,9 @@ GetAttributes(SETUPDLG *setupdlg)
 static void
 GetDBFile(HWND hdlg)
 {
+
+    TRACE_CXB_PLUS("START");
+    
 #ifdef _WIN64
     SETUPDLG *setupdlg = (SETUPDLG *) GetWindowLongPtr(hdlg, DWLP_USER);
 #else
@@ -19599,6 +21765,9 @@ GetDBFile(HWND hdlg)
 	SetDlgItemText(hdlg, IDC_DBNAME, setupdlg->attr[KEY_DBNAME].attr);
 	setupdlg->attr[KEY_DBNAME].supplied = TRUE;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
 }
 
 /**
@@ -19613,6 +21782,9 @@ GetDBFile(HWND hdlg)
 static BOOL CALLBACK
 ConfigDlgProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 {
+
+    TRACE_CXB_PLUS("START");
+    
     SETUPDLG *setupdlg = NULL;
     WORD index;
 
@@ -19689,6 +21861,9 @@ ConfigDlgProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 	    EnableWindow(GetDlgItem(hdlg, IDC_DSNAME), FALSE);
 	    EnableWindow(GetDlgItem(hdlg, IDC_DSNAMETEXT), FALSE);
 	}
+
+    TRACE_CXB_MINUS("DONE");
+
 	return TRUE;
     case WM_COMMAND:
 	switch (GET_WM_COMMAND_ID(wparam, lparam)) {
@@ -19699,6 +21874,9 @@ ConfigDlgProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 		EnableWindow(GetDlgItem(hdlg, IDOK),
 			     GetDlgItemText(hdlg, IDC_DSNAME,
 					    item, sizeof (item)));
+
+    TRACE_CXB_MINUS("DONE");
+
 		return TRUE;
 	    }
 	    break;
@@ -19779,6 +21957,9 @@ ConfigDlgProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 	}
 	break;
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return FALSE;
 }
 
@@ -19794,11 +21975,17 @@ ConfigDlgProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 BOOL INSTAPI
 ConfigDSN(HWND hwnd, WORD request, LPCSTR driver, LPCSTR attribs)
 {
+
+    TRACE_CXB_PLUS("START");
+    
     BOOL success;
     SETUPDLG *setupdlg;
 
     setupdlg = (SETUPDLG *) xmalloc(sizeof (SETUPDLG));
     if (setupdlg == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return FALSE;
     }
     memset(setupdlg, 0, sizeof (SETUPDLG));
@@ -19833,6 +22020,9 @@ ConfigDSN(HWND hwnd, WORD request, LPCSTR driver, LPCSTR attribs)
 	}
     }
     xfree(setupdlg);
+
+    TRACE_CXB_MINUS("DONE");
+
     return success;
 }
 
@@ -19848,6 +22038,9 @@ ConfigDSN(HWND hwnd, WORD request, LPCSTR driver, LPCSTR attribs)
 static BOOL CALLBACK
 DriverConnectProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SETUPDLG *setupdlg;
     WORD index;
 
@@ -19923,6 +22116,9 @@ DriverConnectProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 	CheckDlgButton(hdlg, IDC_ILIKE,
 		       getbool(setupdlg->attr[KEY_ILIKE].attr) ?
 		       BST_CHECKED : BST_UNCHECKED);
+	
+	TRACE_CXB_MINUS("DONE");
+		   
 	return TRUE;
     case WM_COMMAND:
 	switch (GET_WM_COMMAND_ID(wparam, lparam)) {
@@ -19993,9 +22189,15 @@ DriverConnectProc(HWND hdlg, WORD wmsg, WPARAM wparam, LPARAM lparam)
 	    /* FALL THROUGH */
 	case IDCANCEL:
 	    EndDialog(hdlg, GET_WM_COMMAND_ID(wparam, lparam) == IDOK);
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return TRUE;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return FALSE;
 }
 
@@ -20018,6 +22220,9 @@ drvdriverconnect(SQLHDBC dbc, SQLHWND hwnd,
 		 SQLCHAR *connOut, SQLSMALLINT connOutMax,
 		 SQLSMALLINT *connOutLen, SQLUSMALLINT drvcompl)
 {
+
+    TRACE_CXB_PLUS("START");
+
     BOOL maybeprompt, prompt = FALSE, defaultdsn = FALSE;
     DBC *d;
     SETUPDLG *setupdlg;
@@ -20025,15 +22230,24 @@ drvdriverconnect(SQLHDBC dbc, SQLHWND hwnd,
     char *dsn = NULL, *driver = NULL, *dbname = NULL;
 
     if (dbc == SQL_NULL_HDBC) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_INVALID_HANDLE;
     }
     d = (DBC *) dbc;
     if (d->sqlite) {
 	setstatd(d, -1, "connection already established", "08002");
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     setupdlg = (SETUPDLG *) xmalloc(sizeof (SETUPDLG));
     if (setupdlg == NULL) {
+
+    TRACE_CXB_MINUS("DONE");
+
 	return SQL_ERROR;
     }
     memset(setupdlg, 0, sizeof (SETUPDLG));
@@ -20067,6 +22281,9 @@ retry:
 
 	if (!dlgret || dlgret == -1) {
 	    xfree(setupdlg);
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_NO_DATA;
 	}
     }
@@ -20165,6 +22382,9 @@ retry:
 	dbattas(d, setupdlg->attr[KEY_ATTAS].attr);
     }
     xfree(setupdlg);
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 
@@ -20191,12 +22411,18 @@ SQLDriverConnect(SQLHDBC dbc, SQLHWND hwnd,
 		 SQLCHAR *connOut, SQLSMALLINT connOutMax,
 		 SQLSMALLINT *connOutLen, SQLUSMALLINT drvcompl)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
 
     HDBC_LOCK(dbc);
     ret = drvdriverconnect(dbc, hwnd, connIn, connInLen,
 			   connOut, connOutMax, connOutLen, drvcompl);
     HDBC_UNLOCK(dbc);
+    
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -20221,6 +22447,9 @@ SQLDriverConnectW(SQLHDBC dbc, SQLHWND hwnd,
 		  SQLWCHAR *connOut, SQLSMALLINT connOutMax,
 		  SQLSMALLINT *connOutLen, SQLUSMALLINT drvcompl)
 {
+
+    TRACE_CXB_PLUS("START");
+
     SQLRETURN ret;
     char *ci = NULL;
     SQLSMALLINT len = 0;
@@ -20240,6 +22469,9 @@ SQLDriverConnectW(SQLHDBC dbc, SQLHWND hwnd,
 
 	    setstatd(d, -1, "out of memory", (*d->ov3) ? "HY000" : "S1000");
 	    HDBC_UNLOCK(dbc);
+
+    TRACE_CXB_MINUS("DONE");
+
 	    return SQL_ERROR;
 	}
     }
@@ -20276,6 +22508,9 @@ SQLDriverConnectW(SQLHDBC dbc, SQLHWND hwnd,
 	    *connOutLen = len;
 	}
     }
+
+    TRACE_CXB_MINUS("DONE");
+
     return ret;
 }
 #endif
@@ -20716,6 +22951,9 @@ shell(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
 int
 ODBCINSTGetProperties(HODBCINSTPROPERTY prop)
 {
+
+    TRACE_CXB_PLUS("START");
+
     static const char *instYN[] = { "No", "Yes", NULL };
     static const char *syncPragma[] = { "NORMAL", "OFF", "FULL", NULL };
     static const char *jmPragma[] = {
@@ -20810,6 +23048,9 @@ ODBCINSTGetProperties(HODBCINSTPROPERTY prop)
     memcpy(prop->aPromptData, instYN, sizeof (instYN));
     strncpy(prop->szName, "BigInt", INI_MAX_PROPERTY_NAME);
     strncpy(prop->szValue, "No", INI_MAX_PROPERTY_VALUE);
+    
+    TRACE_CXB_MINUS("DONE");
+
     return 1;
 }
 
