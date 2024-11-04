@@ -264,7 +264,8 @@ REM ***************************************************
     call COPY  %ABS_PATH%\*.dll %appdata%\sqlite\%bit%bit > NUL
     echo copy %ABS_PATH%\*.exe to %appdata%\sqlite\%bit%bit
     call COPY  %ABS_PATH%\*.exe %appdata%\sqlite\%bit%bit > NUL
-    timeout /t 1 > NUL
+    REM timeout /t 1 > NUL
+    ping -n 1 -w 0.2 10.0.0.1 > NUL
     Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
     if errorlevel 1 (echo install error & goto exit)
     GOTO :EOF
