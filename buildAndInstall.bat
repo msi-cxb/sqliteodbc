@@ -47,7 +47,7 @@ REM now that environemnt is set up, go build the code
 echo cleaning...
 
 REM clean is reqiured if you are switching between 32 and 64 bit builds
-REM nmake -f sqlite3odbc.mak clean
+nmake -f sqlite3odbc.mak clean
 if errorlevel 1 (echo clean error & goto :exit)
 
 echo building...
@@ -56,7 +56,7 @@ REM build driver, extension, and commandline utilities
 REM nmake -f sqlite3odbc.mak all 
 
 REM build just the driver
-REM nmake -f sqlite3odbc.mak driver
+nmake -f sqlite3odbc.mak driver
 
 REM CXB=1 compiles in the tracing
 REM nmake -f sqlite3odbc.mak driver CXB=1
