@@ -48,8 +48,8 @@ jobs:
       - name: echo and write the result
         run: |
           echo ${{ env.SQLITE_VERSION }} ${{ env.SQLITE_SOURCE_ID }}
-          sed -i '' 's/.*SQLITE_VERSION.*/SQLITE_VERSION: ${{ env.SQLITE_VERSION }}/' README.md
-          sed -i '' 's/.*SQLITE_SOURCE_ID.*/SQLITE_SOURCE_ID: ${{ env.SQLITE_SOURCE_ID }}/' README.md
+          sed -i "" "s/.*SQLITE_VERSION.*/SQLITE_VERSION: ${{ env.SQLITE_VERSION }}/g" README.md
+          sed -i "" "s/.*SQLITE_SOURCE_ID.*/SQLITE_SOURCE_ID: ${{ env.SQLITE_SOURCE_ID }}/g" README.md
       
       - name: Commit and Push Changes to README.md
         env:
