@@ -50,7 +50,7 @@ jobs:
           echo ${{ env.SQLITE_VERSION }} ${{ env.SQLITE_SOURCE_ID }}
           sed --in-place "s/.*SQLITE_VERSION.*/SQLITE_VERSION: ${{ env.SQLITE_VERSION }}/" README.md
           sed --in-place "s/.*SQLITE_SOURCE_ID.*/SQLITE_SOURCE_ID: ${{ env.SQLITE_SOURCE_ID }}/" README.md
-          cat RREADME.md
+          cat README.md
 
       - name: Commit and Push Changes to README.md
         env:
