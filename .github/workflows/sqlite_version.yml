@@ -1,0 +1,36 @@
+name: sqlitte_version
+on:
+  push:
+    branches: [ master, main, develop, release/*, hotfix/* ]
+    paths: 
+      - 'sqlite3.c'
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+jobs:
+  update-sqlite3-version:
+    runs-on: ubuntu-latest
+    name: Get the sqlite3 version from sqlite3.c
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        id: checkout_code
+        
+      - name: verify file
+        id: verify_file
+        run: |
+          if [ -f "sqlite3.c" ]; then
+            echo "==FILE EXISTS=="
+            file_link="sqlite3.c"
+            echo "FILE LINK ==> $file_link"
+            # search for sqlite version
+          else
+            echo "==FILE DOES NOT EXIST=="
+            exit 1
+          fi
+      
+#define SQLITE_VERSION        "3.47.0"
+#define SQLITE_VERSION_NUMBER 3047000
+#define SQLITE_SOURCE_ID      "2024-10-21 16:30:22 03a9703e27c44437c39363d0baf82db4ebc94538a0f28411c85dda156f82636e"
