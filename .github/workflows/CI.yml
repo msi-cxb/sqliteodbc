@@ -32,7 +32,7 @@ jobs:
           dir /b /s .\install
 
       - name: Run test script
-        id: run_testscriipt
+        id: run_testscript
         shell: cmd
         run: |
           run_sqliteODBC_test_WSF.bat 64
