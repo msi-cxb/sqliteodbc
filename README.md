@@ -3,7 +3,9 @@
 Original README is [here](https://github.com/msi-cxb/sqliteodbc/blob/master/README).
 
 This is the current version of SQLite3 used in the driver (values pulled automatically from sqlite3.c)
+
 SQLITE_VERSION: x.x.x
+
 SQLITE_SOURCE_ID: yyyyyyyy
 
 This is a fork of https://github.com/softace/sqliteodbc with modifications to build with Visual Studio 2015/2017/2019/2022 for both 32 and 64 bit. 
