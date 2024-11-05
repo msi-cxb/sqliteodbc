@@ -1,0 +1,64 @@
+name: sqlitte_version
+on:
+  push:
+    branches: [ master, main, develop, release/*, hotfix/* ]
+    paths: 
+      - 'sqlite3.c'
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+jobs:
+  update-sqlite3-version:
+    runs-on: ubuntu-latest
+    name: Get the sqlite3 version from sqlite3.c
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        id: checkout_code
+        
+      - name: verify file
+        id: verify_file
+        run: |
+          if [ -f "sqlite3.c" ]; then
+            echo "==FILE EXISTS=="
+            file_link="sqlite3.c"
+            echo "FILE LINK ==> $file_link"
+            # search for sqlite version
+          else
+            echo "==FILE DOES NOT EXIST=="
+            exit 1
+          fi
+
+      - name: find sqlite version
+        id: find_sqlite_version
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          echo ::set-env name=SQLITE_VERSION::$(perl -ne 'm/^#define SQLITE_VERSION[ ]+\"([0-9.]+)\"$/ && print "$1\n"' sqlite3.c)
+
+      - name: find sqlite source id
+        id: find_sqlite_source_id
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          echo ::set-env name=SQLITE_SOURCE_ID::$(perl -ne 'm/^#define SQLITE_SOURCE_ID[ ]+\"([a-f0-9-: ]+)\"$/ && print "$1\n"' sqlite3.c)
+
+      - name: echo and write the result
+        run: |
+          echo ${{ env.SQLITE_VERSION }} ${{ env.SQLITE_SOURCE_ID }}
+          sed --in-place "s/.*SQLITE_VERSION.*/SQLITE_VERSION: ${{ env.SQLITE_VERSION }}/" README.md
+          sed --in-place "s/.*SQLITE_SOURCE_ID.*/SQLITE_SOURCE_ID: ${{ env.SQLITE_SOURCE_ID }}/" README.md
+          cat README.md
+
+      - name: Commit and Push Changes to README.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add README.md
+          git commit -m "updated README.md with sqlite3 version"
+          git push origin master
+        
