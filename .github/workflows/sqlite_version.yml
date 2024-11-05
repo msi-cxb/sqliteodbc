@@ -30,6 +30,23 @@ jobs:
             echo "==FILE DOES NOT EXIST=="
             exit 1
           fi
+
+      - name: find sqlite version
+        id: find_sqlite_version
+        run: |
+          echo ::set-env name=SQLITE_VERSION::$(perl -ne 'm/^#define SQLITE_VERSION[ ]+\"([0-9.]+)\"$/ && print "$1\n"' sqlite3.c)
+
+      - name: find sqlite source id
+        id: find_sqlite_source_id
+        run: |
+          echo ::set-env name=SQLITE_SOURCE_ID::$(perl -ne 'm/^#define SQLITE_SOURCE_ID[ ]+\"([a-f0-9-: ]+)\"$/ && print "$1\n"' sqlite3.c)
+
+      - name: echo the result
+        run: |
+          echo ${{ env.SQLITE_VERSION }} ${{ env.SQLITE_SOURCE_ID }}
+          echo '${{ env.SQLITE_VERSION }} ${{ env.SQLITE_SOURCE_ID }}'
+        
+      
       
 #define SQLITE_VERSION        "3.47.0"
 #define SQLITE_VERSION_NUMBER 3047000
