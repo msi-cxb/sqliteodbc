@@ -2,7 +2,7 @@
 
 Original README is [here](https://github.com/msi-cxb/sqliteodbc/blob/master/README).
 
-This is the current version of SQLite3 used in the driver (values pulled automatically from sqlite3.c)
+This is the current version of SQLite3 used in the driver (values pulled automatically from sqlite3.c):
 
 SQLITE_VERSION: 3.47.0
 
