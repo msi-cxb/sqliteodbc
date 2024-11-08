@@ -39,9 +39,9 @@ jobs:
         id: setup_msbuild
         with:
           msbuild-architecture: x64
-
-      - name: config shell for VS2022
-        id: config_vs2022
+      
+      - name: Build sqllogictest
+        id: build_sqllogictest
         shell: cmd
         run: |
           SET __DEBUGECHO=ECHO
@@ -79,21 +79,16 @@ jobs:
           )
           %__DEBUGECHO% Visual Studio 2017 / 2019 / 2022 is installed.
           %__DEBUGECHO% VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
-      
+          where nmake
+          cd sqllogictest/src
+          nmake -f Makefile.msc
+
       - name: Run script to build ODBC driver
         id: run_vs2022
         shell: cmd
         run: |
           cd sqliteodbc
           buildAndInstall.bat 64 true
-
-      - name: Build sqllogictest
-        id: build_sqllogictest
-        shell: cmd
-        run: |
-          %__DEBUGECHO% VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
-          cd sqllogictest/src
-          nmake -f Makefile.msc
 
       - name: Run sqllogictest
         id: run_sqllogictest
