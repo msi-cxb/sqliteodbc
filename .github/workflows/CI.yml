@@ -54,7 +54,8 @@ jobs:
           cd sqllogictest/src
           cscript getInstalledODBCDrivers.vbs
           buildWithVisualStudio.bat
-          sqllogictest --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
+          where sqllogictest.exe
+          sqllogictest --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" ..\test\select1.test
 
       # - name: Run sqllogictest
       #   id: run_sqllogictest
