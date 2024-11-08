@@ -189,7 +189,6 @@ class classSqliteOdbcTests
         log ""
         log ""
 
-        dbSqlite3 = strFolder & "\testfile.sqlite3"
 
         log "dbSqlite3 " & dbSqlite3
 
@@ -199,6 +198,7 @@ class classSqliteOdbcTests
         If Err.Number <> 0 Then wscript.quit -1
         insertTests
         If Err.Number <> 0 Then wscript.quit -1
+        dbSqlite3 = strFolder & "\testfile.sqlite3"
         sqlite3_BuiltIn_Tests
         If Err.Number <> 0 Then wscript.quit -1
         sqlite3_rtree_tests
