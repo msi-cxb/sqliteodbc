@@ -19,7 +19,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         id: checkout_code
-            
+      
+      - name: Checkout sqllogictest
+        uses: actions/checkout@v4
+        with:
+          repository: msi-cxb/sqllogictest
+          path: sqllogictest
+
+      - name: get directory listing
+        id: get_directory_listing
+        shell: cmd
+        run: |
+          dir /b /s
+  
       - name: Setup MSBuild and add to PATH
         uses: microsoft/setup-msbuild@v2
         id: setup_msbuild
@@ -29,7 +41,6 @@ jobs:
         shell: cmd
         run: |
           buildAndInstall.bat 64 true
-          dir /b /s .\install
 
       - name: Run test script
         id: run_testscript
