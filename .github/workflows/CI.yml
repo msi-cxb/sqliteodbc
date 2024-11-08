@@ -57,25 +57,11 @@ jobs:
           cd sqliteodbc
           buildAndInstall.bat 64 true
 
-      - name: Run test script
-        id: run_testscript
-        shell: cmd
-        run: |
-          cd sqliteodbc
-          run_sqliteODBC_test_WSF.bat 64
-
-          Makefile.msc
-
       - name: Build sqllogictest
         id: build_sqllogictest
         shell: cmd
         run: |
           cd sqllogictest/src
-          SET VSVARS32=%VSWHEREINSTALLDIR%\Common7\Tools\VsDevCmd.bat
-          IF EXIST "%VSVARS32%" (
-                  set CLARG=-arch=amd64
-                  VSVARS32="%VSVARS32%" %CLARG%
-          )
           nmake -f Makefile.msc
 
       - name: Run sqllogictest
@@ -85,17 +71,9 @@ jobs:
           cd sqllogictest/src
           run-all-odbc.bat
     
-            
-      # - name: install ODBC
-      #   id: install_odbc
-      #   shell: cmd
-      #   run: |
-      #     cd sqliteODBC64
-      #     .\SQLiteODBCInstaller.exe -q -i -d=sql3
-      
-      # - name: Run the executable
-      #   id: run_executable
-      #   shell: powershell
-      #   run: |
-      #     .\bin\Debug\net8.0\csharp_DotNet8_ODBC.exe
-      #     exit $LASTEXITCODE
+      - name: Run test script
+        id: run_testscript
+        shell: cmd
+        run: |
+          cd sqliteodbc
+          run_sqliteODBC_test_WSF.bat 64
