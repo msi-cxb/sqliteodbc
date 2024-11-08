@@ -28,12 +28,6 @@ jobs:
           repository: msi-cxb/sqllogictest
           path: sqllogictest
 
-      - name: get directory listing
-        id: get_directory_listing
-        shell: cmd
-        run: |
-          dir /b /s
-  
       - name: Setup MSBuild and add to PATH
         uses: microsoft/setup-msbuild@v2
         id: setup_msbuild
@@ -71,9 +65,9 @@ jobs:
           cd sqllogictest/src
           run-all-odbc.bat
     
-      # - name: Run test script
-      #   id: run_testscript
-      #   shell: cmd
-      #   run: |
-      #     cd sqliteodbc
-      #     run_sqliteODBC_test_WSF.bat 64
+      - name: Run test script
+        id: run_testscript
+        shell: cmd
+        run: |
+          cd sqliteodbc
+          run_sqliteODBC_test_WSF.bat 64
