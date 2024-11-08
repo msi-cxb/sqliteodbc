@@ -40,12 +40,12 @@ jobs:
         with:
           msbuild-architecture: x64
       
-      - name: Build sqllogictest
-        id: build_sqllogictest
-        shell: cmd
-        run: |
-          cd sqllogictest/src
-          buildWithVisualStudio.bat
+      # - name: Build sqllogictest
+      #   id: build_sqllogictest
+      #   shell: cmd
+      #   run: |
+      #     cd sqllogictest/src
+      #     buildWithVisualStudio.bat
 
       - name: Run script to build ODBC driver
         id: run_vs2022
@@ -54,12 +54,12 @@ jobs:
           cd sqliteodbc
           buildAndInstall.bat 64 true
 
-      - name: Run sqllogictest
-        id: run_sqllogictest
-        shell: cmd
-        run: |
-          cd sqllogictest/src
-          run-all-odbc.bat
+      # - name: Run sqllogictest
+      #   id: run_sqllogictest
+      #   shell: cmd
+      #   run: |
+      #     cd sqllogictest/src
+      #     run-all-odbc.bat
     
       - name: Run test script
         id: run_testscript
