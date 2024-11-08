@@ -47,16 +47,6 @@ jobs:
           SET __DEBUGECHO=ECHO
           IF NOT DEFINED __DEBUGECHO (SET __DEBUGECHO=REM)
 
-          SET VSVARS32=%VSWHEREINSTALLDIR%\Common7\Tools\VsDevCmd.bat
-          IF EXIST "%VSVARS32%" (
-                  set CLARG=-arch=amd64
-                  VSVARS32="%VSVARS32%" %CLARG%
-                  %__DEBUGECHO% VSVARS32="%VSVARS32%" %CLARG%
-          )
-          SET VSVARS32=%VSVARS32:\\=\%
-          %__DEBUGECHO% "%VSVARS32%" %CLARG%
-          CALL "%VSVARS32%" %CLARG% 1>nul
-
           IF DEFINED VSWHERE_EXE GOTO skip_setVsWhereExe
           SET VSWHERE_EXE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
           IF NOT EXIST "%VSWHERE_EXE%" SET VSWHERE_EXE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
@@ -79,6 +69,17 @@ jobs:
           )
           %__DEBUGECHO% Visual Studio 2017 / 2019 / 2022 is installed.
           %__DEBUGECHO% VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
+          
+          SET VSVARS32=%VSWHEREINSTALLDIR%\Common7\Tools\VsDevCmd.bat
+          IF EXIST "%VSVARS32%" (
+                  set CLARG=-arch=amd64
+                  VSVARS32="%VSVARS32%" %CLARG%
+                  %__DEBUGECHO% VSVARS32="%VSVARS32%" %CLARG%
+          )
+          SET VSVARS32=%VSVARS32:\\=\%
+          %__DEBUGECHO% "%VSVARS32%" %CLARG%
+          CALL "%VSVARS32%" %CLARG% 1>nul
+
           where nmake
           cd sqllogictest/src
           nmake -f Makefile.msc
