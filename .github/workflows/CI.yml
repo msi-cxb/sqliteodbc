@@ -19,6 +19,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         id: checkout_code
+        with:
+          path: sqliteodbc
       
       - name: Checkout sqllogictest
         uses: actions/checkout@v4
@@ -36,18 +38,36 @@ jobs:
         uses: microsoft/setup-msbuild@v2
         id: setup_msbuild
               
-      - name: Run MSBuild
+      - name: Run MSBuild to build ODBC driver
         id: run_msbuild
         shell: cmd
         run: |
+          cd sqliteodbc
           buildAndInstall.bat 64 true
 
       - name: Run test script
         id: run_testscript
         shell: cmd
         run: |
+          cd sqliteodbc
           run_sqliteODBC_test_WSF.bat 64
 
+          Makefile.msc
+
+      - name: Build sqllogictest
+        id: build_sqllogictest
+        shell: cmd
+        run: |
+          cd sqllogictest/src
+          nmake -f Makefile.msc
+
+      - name: Run sqllogictest
+        id: run_sqllogictest
+        shell: cmd
+        run: |
+          cd sqllogictest/src
+          run-all-odbc.bat
+    
             
       # - name: install ODBC
       #   id: install_odbc
