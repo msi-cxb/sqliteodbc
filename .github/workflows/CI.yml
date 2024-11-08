@@ -44,7 +44,6 @@ jobs:
         id: config_vs2022
         shell: cmd
         run: |
-          cd sqllogictest/src
           SET VSVARS32=%VSWHEREINSTALLDIR%\Common7\Tools\VsDevCmd.bat
           IF EXIST "%VSVARS32%" (
                   set CLARG=-arch=amd64
