@@ -37,6 +37,8 @@ jobs:
       - name: Setup MSBuild and add to PATH
         uses: microsoft/setup-msbuild@v2
         id: setup_msbuild
+        with:
+          msbuild-architecture: x64
               
       - name: Run MSBuild to build ODBC driver
         id: run_msbuild
