@@ -46,7 +46,7 @@ jobs:
         run: |
           SET __DEBUGECHO=ECHO
           IF NOT DEFINED __DEBUGECHO (SET __DEBUGECHO=REM)
-          
+
           SET VSVARS32=%VSWHEREINSTALLDIR%\Common7\Tools\VsDevCmd.bat
           IF EXIST "%VSVARS32%" (
                   set CLARG=-arch=amd64
@@ -80,13 +80,6 @@ jobs:
           %__DEBUGECHO% Visual Studio 2017 / 2019 / 2022 is installed.
           %__DEBUGECHO% VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
       
-
-
-
-
-
-
-
       - name: Run script to build ODBC driver
         id: run_vs2022
         shell: cmd
@@ -98,6 +91,7 @@ jobs:
         id: build_sqllogictest
         shell: cmd
         run: |
+          %__DEBUGECHO% VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
           cd sqllogictest/src
           nmake -f Makefile.msc
 
