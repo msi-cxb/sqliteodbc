@@ -49,6 +49,8 @@ jobs:
                   set CLARG=-arch=amd64
                   VSVARS32="%VSVARS32%" %CLARG%
           )
+          SET VSVARS32=%VSVARS32:\\=\%
+          CALL "%VSVARS32%" %CLARG% 1>nul
               
       - name: Run script to build ODBC driver
         id: run_vs2022
