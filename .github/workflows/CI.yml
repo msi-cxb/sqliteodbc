@@ -46,16 +46,16 @@ jobs:
         shell: cmd
         run: |
           cd sqllogictest/src
-          cscript getInstalledODBCDrivers.vbs
+          cscript //Nologo getInstalledODBCDrivers.vbs
           buildWithVisualStudio.bat
 
-      - name: test sqllogictest
+      - name: test for sqllogictest and sqliteodbc for this shell
         id: test_sqllogictest
         shell: cmd
         run: |
-          where sqllogictest.exe
           cd sqllogictest/src
-          cscript getInstalledODBCDrivers.vbs
+          where sqllogictest.exe
+          cscript //Nologo getInstalledODBCDrivers.vbs
           sqllogictest --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
 
       - name: Run full sqllogictest
