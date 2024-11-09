@@ -34,11 +34,12 @@ jobs:
         with:
           msbuild-architecture: x64
       
-      - name: Run script to build ODBC driver
+      - name: Run script to build 32 and 64 bit ODBC driver
         id: run_vs2022
         shell: cmd
         run: |
           cd sqliteodbc
+          buildAndInstall.bat 32 true
           buildAndInstall.bat 64 true
 
       - name: Build sqllogictest
@@ -47,27 +48,35 @@ jobs:
         run: |
           cd sqllogictest/src
           cscript //Nologo getInstalledODBCDrivers.vbs
-          buildWithVisualStudio.bat
+          buildWithVisualStudio.bat 32
+          buildWithVisualStudio.bat 64
 
-      - name: test for sqllogictest and sqliteodbc for this shell
+      - name: test for 32/64 bit sqllogictest and sqliteodbc for this shell
         id: test_sqllogictest
         shell: cmd
         run: |
           cd sqllogictest/src
-          where sqllogictest.exe
-          cscript //Nologo getInstalledODBCDrivers.vbs
-          sqllogictest --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
+          REM 32 bit
+          where sqllogictest_32.exe
+          c:\windows\syswow64\cscript //Nologo getInstalledODBCDrivers.vbs
+          sqllogictest_32 --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
+          REM 64 bit
+          where sqllogictest_64.exe
+          c:\windows\system32\cscript //Nologo getInstalledODBCDrivers.vbs
+          sqllogictest_64 --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
 
       - name: Run full sqllogictest
         id: run_sqllogictest
         shell: cmd
         run: |
           cd sqllogictest/src
-          run-all-odbc.bat
+          run-all-odbc.bat 32
+          run-all-odbc.bat 64
     
       - name: Run test script
         id: run_testscript
         shell: cmd
         run: |
           cd sqliteodbc
+          run_sqliteODBC_test_WSF.bat 32
           run_sqliteODBC_test_WSF.bat 64
