@@ -59,16 +59,14 @@ jobs:
             )
             SET VSVARS32=%VSVARS32:\\=\%
             echo "%VSVARS32%" %CLARG%
-            CALL "%VSVARS32%" %CLARG%
+            CALL "%VSVARS32%" %CLARG% 1>nul
             echo **************************
-            echo %VCINSTALLDIR%
-            dir /s /b %VCINSTALLDIR%
-        
-        # echo **************************
-        # SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
-        # set installDir=.\install\64bit
-        # xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
-        # dir /s /b .\install
+            dir /s /b %VSWHEREINSTALLDIR%
+            echo **************************
+            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
+            set installDir=.\install\64bit
+            xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
+            dir /s /b .\install
         
 
         # - name: run_msbuild
