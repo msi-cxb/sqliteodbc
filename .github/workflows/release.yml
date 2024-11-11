@@ -42,10 +42,11 @@ jobs:
         #     xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
         #     echo ${{ github.sha }} > %installDir%\Release.txt
         
-        - name: include vc_redist
+        - name: include vc_redist.x64
           id: include_vc_redist
           shell: cmd
           run: |
+            set ARCH=amd64
             SET VSWHERE_EXE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
             IF NOT EXIST "%VSWHERE_EXE%" SET VSWHERE_EXE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
             SET VS_WHEREIS_CMD="%VSWHERE_EXE%" -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -latest        
@@ -63,9 +64,6 @@ jobs:
             echo '%VCINSTALLDIR%'\Redist
             dir /s /b '%VCINSTALLDIR%'\Redist
             echo **************************
-            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x86.exe
-            set installDir=.\install\32bit
-            xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
             SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
             set installDir=.\install\64bit
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
