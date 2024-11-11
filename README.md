@@ -15,7 +15,6 @@ Features
 
 TODO
 - possibly use cMake to build instead of nmake with .mak file
-- figure out how to run [sqllogictest](https://sqlite.org/sqllogictest/info/trunk) tests in CI (I've got a VBScript that can do this but test files are huge)
 
 
 
