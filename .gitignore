@@ -417,3 +417,4 @@ version.txt
 # project specific stuff
 VERSION_C
 resource3.h
+*.sqlite3
