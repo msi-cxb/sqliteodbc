@@ -61,8 +61,8 @@ jobs:
             echo "%VSVARS32%" %CLARG%
             CALL "%VSVARS32%" %CLARG% 1>nul
             echo **************************
-            echo %VCINSTALLDIR%\Redist
-            dir /s /b %VCINSTALLDIR%\Redist
+            echo %VCINSTALLDIR%
+            dir /s /b %VCINSTALLDIR%
             echo **************************
             SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
             set installDir=.\install\64bit
