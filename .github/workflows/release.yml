@@ -52,10 +52,11 @@ jobs:
             echo VS_WHEREIS_CMD=%VS_WHEREIS_CMD%
             FOR /F "delims=" %%D IN ('%VS_WHEREIS_CMD%') DO (SET VSWHEREINSTALLDIR=%%D)
             echo VsWhereInstallDir = '%VSWHEREINSTALLDIR%'
-            SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x86.exe
+            dir /s /b %VCINSTALLDIR%\Redist
+            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x86.exe
             set installDir=.\install\32bit
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
-            SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x64.exe
+            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
             set installDir=.\install\64bit
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
             dir /s /b
