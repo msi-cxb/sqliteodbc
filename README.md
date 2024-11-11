@@ -12,6 +12,8 @@ Features
 - Builds with Visual Studio (2015/2017/2019/2022) using nmake
 - 32 and 64 bit builds work and are tested by CI
 - It includes a batch script [buildAndInstall.bat](https://github.com/msi-cxb/sqliteodbc/blob/master/buildAndInstall.bat) to build and install as admin on Windows (10 and 11 tested).
+    - `buildAndInstall.bat [arch: 32 or 64] [install: true or false]`
+- tested with SQLite3 developers `sqllogictest` full suite of tests
 
 TODO
 - possibly use cMake to build instead of nmake with .mak file
