@@ -20,27 +20,27 @@ jobs:
           id: setup_msbuild
           uses: microsoft/setup-msbuild@v2
 
-        # - name: build 32 bit ODBC driver
-        #   id: build_32_bit_ODBC_driver
-        #   shell: cmd
-        #   run: |
-        #     buildAndInstall.bat 32 true
-        #     set installDir=.\install\32bit
-        #     mkdir %installDir%
-        #     xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
-        #     xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
-        #     echo ${{ github.sha }} > %installDir%\Release.txt
+        - name: build 32 bit ODBC driver
+          id: build_32_bit_ODBC_driver
+          shell: cmd
+          run: |
+            buildAndInstall.bat 32 true
+            set installDir=.\install\32bit
+            mkdir %installDir%
+            xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
+            xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
+            echo ${{ github.sha }} > %installDir%\Release.txt
   
-        # - name: build 64 bit ODBC driver
-        #   id: build_64_bit_ODBC_driver
-        #   shell: cmd
-        #   run: |
-        #     buildAndInstall.bat 64 true
-        #     set installDir=.\install\64bit
-        #     mkdir %installDir%
-        #     xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
-        #     xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
-        #     echo ${{ github.sha }} > %installDir%\Release.txt
+        - name: build 64 bit ODBC driver
+          id: build_64_bit_ODBC_driver
+          shell: cmd
+          run: |
+            buildAndInstall.bat 64 true
+            set installDir=.\install\64bit
+            mkdir %installDir%
+            xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
+            xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
+            echo ${{ github.sha }} > %installDir%\Release.txt
         
         - name: include vc_redist.x86
           id: include_vc_redist_x86
@@ -82,25 +82,18 @@ jobs:
             mkdir %installDir%
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
   
-  
-
         - name: check
           shell: cmd
           run: |
+            7z a sqliteodbc.zip install
             dir /s /b install
-        
 
+        - uses: actions/upload-artifact@v4
+          with:
+            name: sqliteodbc-binaries-windows
+            path: |
+              sqliteodbc.zip
 
-# C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143\vc_redist.x64.exe
-# C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143\vc_redist.x86.exe
-
-
-        # - name: run_msbuild
-        #   id: run_msbuild
-        #   run: |
-        #     echo ${{ github.sha }} > Release.txt
-        #     msbuild .\gitactionstest_dotnet8.sln -t:clean,build,publish -restore /p:Configuration=Release
-            
         # - shell: cmd
         #   id: cmd
         #   run: |
