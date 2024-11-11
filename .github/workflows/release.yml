@@ -29,7 +29,6 @@ jobs:
             mkdir %installDir%
             xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
             xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
-            echo ${{ github.sha }} > %installDir%\Release.txt
   
         - name: build 64 bit ODBC driver
           id: build_64_bit_ODBC_driver
@@ -40,7 +39,6 @@ jobs:
             mkdir %installDir%
             xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
             xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
-            echo ${{ github.sha }} > %installDir%\Release.txt
         
         - name: include vc_redist.x86
           id: include_vc_redist_x86
@@ -85,6 +83,8 @@ jobs:
         - name: check
           shell: cmd
           run: |
+            echo ${{ github.repository }} Tag: ${{ github.ref_name }} SHA: ${{ github.sha }} > Release.txt
+            xcopy /Q /Y Release.txt install 1>nul
             7z a sqliteodbc.zip install
             dir /s /b install
 
