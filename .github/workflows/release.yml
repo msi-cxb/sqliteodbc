@@ -63,12 +63,18 @@ jobs:
             echo **************************
             dir /s /b "%VCINSTALLDIR%\Redist\MSVC"
             echo **************************
-            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
+            SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x64.exe
             echo %VC_REDIST%
             set installDir=.\install\64bit
+            mkdir %installDir%
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
             dir /s /b %installDir%
         
+
+
+# C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143\vc_redist.x64.exe
+# C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143\vc_redist.x86.exe
+
 
         # - name: run_msbuild
         #   id: run_msbuild
