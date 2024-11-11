@@ -87,7 +87,7 @@ jobs:
         - name: check
           shell: cmd
           run: |
-            dir /s /b %installDir%
+            dir /s /b install
         
 
 
