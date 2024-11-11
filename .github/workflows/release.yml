@@ -61,12 +61,12 @@ jobs:
             echo "%VSVARS32%" %CLARG%
             CALL "%VSVARS32%" %CLARG% 1>nul
             echo **************************
-            dir "%VSWHEREINSTALLDIR%"
+            dir "%VCINSTALLDIR%\Redist"
             echo **************************
-            SET VC_REDIST=%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe
+            SET VC_REDIST="%VCINSTALLDIR%\Redist\MSVC\v143\vc_redist.x64.exe"
             set installDir=.\install\64bit
             xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
-            dir /s /b 
+            dir /s /b .\install
         
 
         # - name: run_msbuild
