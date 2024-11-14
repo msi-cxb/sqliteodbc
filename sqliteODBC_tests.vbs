@@ -383,8 +383,8 @@ class classSqliteOdbcTests
         log "sqlite_sqlfcmp_printf_format (printf added 3.38.0)"
         
         opendb "MEM  "
-        log "load_extension('.\sqlfcmp.dll') will throw error but it does load the extension"
-        query2csv("SELECT load_extension('.\sqlfcmp.dll') as ext_loaded")
+        log "load_extension('.\install\" & sBitPath & "\sqlfcmp.dll') will throw error but it does load the extension"
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\sqlfcmp.dll') as ext_loaded")
         if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
 
         query2csv("drop table if exists t;")
@@ -486,7 +486,7 @@ class classSqliteOdbcTests
         REM #define _S_IWRITE 0x0080 // Write permission, owner
         REM #define _S_IEXEC  0x0040 // Execute/search permission, owner
 
-        logResult query2csv("SELECT load_extension('.\fileio.dll') as ext_loaded")
+        logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\fileio.dll') as ext_loaded")
 
         log "fileio dll does not work with SELECT load_extension(), so need to load via connection string"
         opendb "SQL3-fileio"
@@ -548,7 +548,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_decimal"
         opendb "MEM  "
         log "load_extension() throws error but works"
-        query2csv("SELECT load_extension('.\decimal.dll') as ext_loaded")
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\decimal.dll') as ext_loaded")
         if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
 
         query2csv("SELECT decimal(pi());")
@@ -670,7 +670,7 @@ class classSqliteOdbcTests
 
         dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
         opendb "SQL3 "
-        logResult query2csv("SELECT load_extension('.\vfsstat.dll') as ext_loaded")
+        logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\vfsstat.dll') as ext_loaded")
         logResult query2csv("DROP TABLE IF EXISTS t1;")
         logResult query2csv("CREATE TABLE t1(x integer,y blob);")
         logResult query2csv("INSERT INTO t1 VALUES(123, randomblob(5000));")
@@ -696,7 +696,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_bfsvtab"
         opendb "SQL3 "
         log "load_extension(bfsvtab.dll)"
-        query2csv("SELECT load_extension('.\bfsvtab.dll') as ext_loaded")
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\bfsvtab.dll') as ext_loaded")
         if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
 
         query("create table edges(fromNode integer, toNode integer);")
@@ -803,7 +803,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_uuid"
         opendb "MEM  "
         log "load_extension() throws error but works"
-        logResult query2csv("SELECT load_extension('.\uuid.dll') as ext_loaded")
+        logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\uuid.dll') as ext_loaded")
         logResult query2csv("select uuid() as uv4")
         if aQueryResults(2).count <> 1 then retValue = retValue+1
         retValue = retValue+uuid_tests
@@ -930,7 +930,7 @@ class classSqliteOdbcTests
         log "******************************************************"
         log "sqlite_extension_functions_wholenumber"
         log "wholenumber extension dll works with SELECT load_extension()"
-        log query("SELECT load_extension('.\wholenumber.dll') as loaded;")
+        log query("SELECT load_extension('.\install\" & sBitPath & "\wholenumber.dll') as loaded;")
         log getSortedFunctionList("whole") & vbcrlf
         log query("drop table if exists nums;")
         log query("CREATE VIRTUAL TABLE nums USING wholenumber;")
@@ -1005,7 +1005,7 @@ class classSqliteOdbcTests
         log "******************************************************"
         log "sqlite_extension_functions_sha"
         log "load_extension() throws error, but sha3 methods are loaded (Function sequence error)"
-        log query("SELECT load_extension('.\shathree.dll') as loaded;")
+        log query("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
         query2csv("SELECT sha3(1) = sha3('1');")
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
         query2csv("SELECT sha3('hello') = sha3(x'68656c6c6f');")
@@ -1055,7 +1055,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_functions_series"
         log "not loaded..."
         log query("SELECT * FROM generate_series(0,100,5);")
-        log query("SELECT load_extension('.\series.dll') as loaded;")
+        log query("SELECT load_extension('.\install\" & sBitPath & "\series.dll') as loaded;")
         log "but not showing up...maybe because it is table-valued-function using a virtual table. "
         s = getSortedFunctionList("series")
         if instr(s, "no items") = 0 then retValue = retValue + 1
@@ -1096,7 +1096,7 @@ class classSqliteOdbcTests
         if instr(s, "no items") = 0 then retValue = retValue + 1
         log "regexp not builtin for ODBC driver " & retValue
         
-        log query("SELECT load_extension('.\regexp.dll') as loaded")
+        log query("SELECT load_extension('.\install\" & sBitPath & "\regexp.dll') as loaded")
         s = getSortedFunctionList("regexp")
         if instr(s, "no items") > 0 then retValue = retValue + 1
         log "load_extension errors (Function sequence error) but REGEXP works " & retValue
@@ -1185,7 +1185,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_functions_tests"
         opendb "MEM  "
         log "load_extension(extension-functions.dll)"
-        query2csv("SELECT load_extension('.\extension-functions.dll') as ext_loaded")
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\extension-functions.dll') as ext_loaded")
         retValue = retValue+sqlite3_extension_functions
         closedb
         log "******************************************************"
@@ -1237,7 +1237,7 @@ class classSqliteOdbcTests
         query2csv("select strfilter('hello world!','o!') as x;")
         if aQueryResults(2)(0) <> """oo!""" then retValue = retValue+1
 
-        query("SELECT load_extension('.\csv.dll') as loaded")
+        query("SELECT load_extension('.\install\" & sBitPath & "\csv.dll') as loaded")
         query("CREATE VIRTUAL TABLE temp.t1 USING csv(filename='test.csv',header=true)")
         
         ' lower_quartile(X) 
@@ -1273,7 +1273,7 @@ class classSqliteOdbcTests
         log "sqlite_extension_functions_csv"
         opendb "SQL3 "
         log "load_extension(csv.dll) "
-        log query("SELECT load_extension('.\csv.dll') as loaded")
+        log query("SELECT load_extension('.\install\" & sBitPath & "\csv.dll') as loaded")
         log query("CREATE VIRTUAL TABLE temp.t1 USING csv(filename='test.csv',header=true)")
         logResult query2csv(" SELECT * FROM t1")
         s = aQueryResults(2).count & "x" & ubound(split(aQueryResults(2)(0),","))+1
@@ -3591,37 +3591,37 @@ class classSqliteOdbcTests
             case "MEM  ":
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=:memory:;"
             case "SQL3-crypto"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\crypto.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\crypto.dll;"
             case "SQL3-LoadExt-Csv"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\csv.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\csv.dll;"
             case "SQL3-LoadExt-ExtFun"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\extension-functions.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\extension-functions.dll;"
             case "SQL3-checkfreelist"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\checkfreelist.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\checkfreelist.dll;"
             case "SQL3-ieee754"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\ieee754.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\ieee754.dll;"
             case "SQL3-LoadExt-Regexp"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\regexp.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\regexp.dll;"
             case "SQL3-series"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\series.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\series.dll;"
             case "SQL3-sha"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\shathree.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\shathree.dll;"
             case "SQL3-totype"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\totype.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\totype.dll;"
             case "SQL3-wholenumber"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\wholenumber.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\wholenumber.dll;"
             case "SQL3-uuid"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\uuid.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\uuid.dll;"
             case "SQL3-vfsstat"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\vfsstat.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\vfsstat.dll;"
             case "SQL3-bfsvtab"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\bfsvtab.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\bfsvtab.dll;"
             case "SQL3-decimal"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\decimal.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\decimal.dll;"
             case "SQL3-fileio"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\fileio.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\fileio.dll;"
             case "SQL3-sqlfcmp"
-                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\sqlfcmp.dll;"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\sqlfcmp.dll;"
         end select
         
         if bVerboseOutput then log p & " " & sConnStr & vbcrlf
