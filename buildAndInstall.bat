@@ -48,15 +48,16 @@ echo cleaning...
 
 REM clean is reqiured if you are switching between 32 and 64 bit builds
 nmake -f sqlite3odbc.mak clean
-if errorlevel 1 (echo clean error & goto :exit)
+REM if errorlevel 1 (echo clean error & goto :exit)
 
 echo building...
 
 REM build driver, extension, and commandline utilities
-REM nmake -f sqlite3odbc.mak all 
+nmake -f sqlite3odbc.mak all 
 
 REM build just the driver
-nmake -f sqlite3odbc.mak driver
+REM nmake -f sqlite3odbc.mak driver
+REM nmake -f sqlite3odbc.mak extensions
 
 REM CXB=1 compiles in the tracing
 REM nmake -f sqlite3odbc.mak driver CXB=1
@@ -212,32 +213,29 @@ REM ***************************************************
 :fn_CopyFilesToInstall
     echo copying SQLite3 files to %installDir%...
     if not exist %installDir% ( mkdir  %installDir% )
-    @REM xcopy /Q /Y bfsvtab.dll %installDir% 1>nul
-    @REM xcopy /Q /Y checkfreelist.dll %installDir% 1>nul
-    @REM xcopy /Q /Y checkindex.dll %installDir% 1>nul
-    @REM xcopy /Q /Y crypto.dll %installDir% 1>nul
-    @REM xcopy /Q /Y csv.dll %installDir% 1>nul
-    @REM xcopy /Q /Y decimal.dll %installDir% 1>nul
-    @REM xcopy /Q /Y extension-functions.dll %installDir% 1>nul
-    @REM xcopy /Q /Y fileio.dll %installDir% 1>nul
-    @REM xcopy /Q /Y ieee754.dll %installDir% 1>nul
-    @REM xcopy /Q /Y inst.exe %installDir% 1>nul
-    @REM xcopy /Q /Y msi.dll %installDir% 1>nul
-    @REM xcopy /Q /Y regexp.dll %installDir% 1>nul
-    @REM xcopy /Q /Y series.dll %installDir% 1>nul
-    @REM xcopy /Q /Y sha1.dll %installDir% 1>nul
-    @REM xcopy /Q /Y shathree.dll %installDir% 1>nul
-    @REM xcopy /Q /Y sqldiff.exe %installDir% 1>nul
-    @REM xcopy /Q /Y sqlfcmp.dll %installDir% 1>nul
-    @REM xcopy /Q /Y sqlite3.exe %installDir% 1>nul
+    xcopy /Q /Y bfsvtab.dll %installDir% 1>nul
+    xcopy /Q /Y checkfreelist.dll %installDir% 1>nul
+    xcopy /Q /Y crypto.dll %installDir% 1>nul
+    xcopy /Q /Y csv.dll %installDir% 1>nul
+    xcopy /Q /Y decimal.dll %installDir% 1>nul
+    xcopy /Q /Y extension-functions.dll %installDir% 1>nul
+    xcopy /Q /Y fileio.dll %installDir% 1>nul
+    xcopy /Q /Y ieee754.dll %installDir% 1>nul
+    xcopy /Q /Y inst.exe %installDir% 1>nul
+    xcopy /Q /Y regexp.dll %installDir% 1>nul
+    xcopy /Q /Y series.dll %installDir% 1>nul
+    xcopy /Q /Y sha1.dll %installDir% 1>nul
+    xcopy /Q /Y shathree.dll %installDir% 1>nul
+    xcopy /Q /Y sqlfcmp.dll %installDir% 1>nul
+    xcopy /Q /Y totype.dll %installDir% 1>nul
+    xcopy /Q /Y uuid.dll %installDir% 1>nul
+    xcopy /Q /Y vfsstat.dll %installDir% 1>nul
+    xcopy /Q /Y wholenumber.dll %installDir% 1>nul
+    xcopy /Q /Y sqldiff.exe %installDir% 1>nul
+    xcopy /Q /Y sqlite3.exe %installDir% 1>nul
+    xcopy /Q /Y uninst.exe %installDir% 1>nul
     xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
     xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
-    @REM xcopy /Q /Y totype.dll %installDir% 1>nul
-    @REM xcopy /Q /Y trig.dll %installDir% 1>nul
-    @REM xcopy /Q /Y uninst.exe %installDir% 1>nul
-    @REM xcopy /Q /Y uuid.dll %installDir% 1>nul
-    @REM xcopy /Q /Y vfsstat.dll %installDir% 1>nul
-    @REM xcopy /Q /Y wholenumber.dll %installDir% 1>nul
     
     if %bit%==32 (
     SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x86.exe

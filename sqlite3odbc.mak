@@ -120,25 +120,23 @@ driver: sqlite3odbc.dll \
 exe:    sqlite3.exe \
         sqldiff.exe
 
-extensions: msi.dll \
-        trig.dll \
-        regexp.dll \
-        csv.dll \
-        checkindex.dll \
+extensions: bfsvtab.dll \
         checkfreelist.dll \
+        crypto.dll \
+        csv.dll \
+        decimal.dll \
+        extension-functions.dll \
+        fileio.dll \
+        ieee754.dll \
+        regexp.dll \
         shathree.dll \
         series.dll \
         sha1.dll \
-        totype.dll \
-        wholenumber.dll \
-        decimal.dll \
-        ieee754.dll \
-        fileio.dll \
-        crypto.dll \
-        uuid.dll \
-        vfsstat.dll \
         sqlfcmp.dll \
-        bfsvtab.dll
+        totype.dll \
+        uuid.dll \
+        wholenumber.dll \
+        vfsstat.dll
 
 # needs to be run as administrator
 install: clean SQLiteODBCInstaller.exe sqlite3odbc.dll
@@ -217,89 +215,77 @@ resource3.h:	resource.h.in VERSION_C fixup.exe
         --VERS-- @VERSION \
         --VERS_C-- @VERSION_C
 
-# extension-functions.dll:	extension-functions.obj
-# 		$(LN) $(DLLLFLAGS) extension-functions.obj -out:$@ $(DLLLIBS)
+extension-functions.dll:	extension-functions.obj
+		$(LN) $(DLLLFLAGS) extension-functions.obj -out:$@ $(DLLLIBS)
 
-# csv.dll:	csv.obj
-# 		$(LN) $(DLLLFLAGS) csv.obj -out:$@ $(DLLLIBS)
+csv.dll:	csv.obj
+		$(LN) $(DLLLFLAGS) csv.obj -out:$@ $(DLLLIBS)
 
-# regexp.dll:	regexp.obj
-# 		$(LN) $(DLLLFLAGS) regexp.obj -out:$@ $(DLLLIBS)
+regexp.dll:	regexp.obj
+		$(LN) $(DLLLFLAGS) regexp.obj -out:$@ $(DLLLIBS)
 
-# trig.dll:	trig.obj
-# 		$(LN) $(DLLLFLAGS) trig.obj /export:sqlite3_trig_init -out:$@ $(DLLLIBS) 
+checkfreelist.dll:	checkfreelist.obj
+		$(LN) $(DLLLFLAGS) checkfreelist.obj -out:$@ $(DLLLIBS) 
 
-# msi.dll:	msi.obj
-# 		$(LN) $(DLLLFLAGS) msi.obj /export:sqlite3_msi_init -out:$@ $(DLLLIBS) 
+shathree.dll:	shathree.obj
+		$(LN) $(DLLLFLAGS) shathree.obj -out:$@ $(DLLLIBS) 
 
-# checkfreelist.dll:	checkfreelist.obj
-# 		$(LN) $(DLLLFLAGS) checkfreelist.obj -out:$@ $(DLLLIBS) 
+fileio.dll:	fileio.obj sqlite3.obj
+		$(LN) $(DLLLFLAGS) -DFILEIO_WIN32_DLL fileio.obj sqlite3.obj -out:$@ $(DLLLIBS) 
 
-# checkindex.dll:	checkindex.obj
-# 		$(LN) $(DLLLFLAGS) checkindex.obj -out:$@ $(DLLLIBS) 
+series.dll:	series.obj
+		$(LN) $(DLLLFLAGS) series.obj -out:$@ $(DLLLIBS) 
 
-# shathree.dll:	shathree.obj
-# 		$(LN) $(DLLLFLAGS) shathree.obj -out:$@ $(DLLLIBS) 
-
-# fileio.dll:	fileio.obj test_windirent.obj sqlite3.obj
-#		 $(LN) $(DLLLFLAGS) fileio.obj test_windirent.obj sqlite3.obj -out:$@ $(DLLLIBS) 
-
-# fileio.dll:	fileio.obj sqlite3.obj
-# 		$(LN) $(DLLLFLAGS) fileio.obj sqlite3.obj -out:$@ $(DLLLIBS) 
-
-# series.dll:	series.obj
-# 		$(LN) $(DLLLFLAGS) series.obj -out:$@ $(DLLLIBS) 
-
-# sha1.dll:	sha1.obj
-# 		$(LN) $(DLLLFLAGS) sha1.obj -out:$@ $(DLLLIBS) 
+sha1.dll:	sha1.obj
+		$(LN) $(DLLLFLAGS) sha1.obj -out:$@ $(DLLLIBS) 
         
-# sqlfcmp.dll:	sqlfcmp.obj
-# 		$(LN) $(DLLLFLAGS) sqlfcmp.obj -out:$@ $(DLLLIBS) 
+sqlfcmp.dll:	sqlfcmp.obj
+		$(LN) $(DLLLFLAGS) sqlfcmp.obj -out:$@ $(DLLLIBS) 
 
-# totype.dll:	totype.obj
-# 		$(LN) $(DLLLFLAGS) totype.obj -out:$@ $(DLLLIBS) 
+totype.dll:	totype.obj
+		$(LN) $(DLLLFLAGS) totype.obj -out:$@ $(DLLLIBS) 
 
-# wholenumber.dll:	wholenumber.obj
-# 		$(LN) $(DLLLFLAGS) wholenumber.obj -out:$@ $(DLLLIBS) 
+wholenumber.dll:	wholenumber.obj
+		$(LN) $(DLLLFLAGS) wholenumber.obj -out:$@ $(DLLLIBS) 
 
-# decimal.dll:	decimal.obj
-# 		$(LN) $(DLLLFLAGS) decimal.obj -out:$@ $(DLLLIBS) 
+decimal.dll:	decimal.obj
+		$(LN) $(DLLLFLAGS) decimal.obj -out:$@ $(DLLLIBS) 
 
-# ieee754.dll:	ieee754.obj
-# 		$(LN) $(DLLLFLAGS) ieee754.obj -out:$@ $(DLLLIBS) 
+ieee754.dll:	ieee754.obj
+		$(LN) $(DLLLFLAGS) ieee754.obj -out:$@ $(DLLLIBS) 
 
-# vfsstat.dll:	vfsstat.obj
-# 		$(LN) $(DLLLFLAGS) vfsstat.obj -out:$@ $(DLLLIBS) 
+vfsstat.dll:	vfsstat.obj
+		$(LN) $(DLLLFLAGS) vfsstat.obj -out:$@ $(DLLLIBS) 
 
-# uuid.dll:	uuid.obj
-# 		$(LN) $(DLLLFLAGS) uuid.obj -out:$@ $(DLLLIBS) 
+uuid.dll:	uuid.obj
+		$(LN) $(DLLLFLAGS) uuid.obj -out:$@ $(DLLLIBS) 
 
-# crypto.dll:	crypto.obj md5.obj shaone.obj shatwo.obj
-# 		$(LN) $(DLLLFLAGS) $** -out:$@ $(DLLLIBS)
+crypto.dll:	crypto.obj md5.obj shaone.obj shatwo.obj
+		$(LN) $(DLLLFLAGS) $** -out:$@ $(DLLLIBS)
 
-# bfsvtab.dll:	bfsvtab.obj
-# 		$(LN) $(DLLLFLAGS) bfsvtab.obj -out:$@ $(DLLLIBS) 
+bfsvtab.dll:	bfsvtab.obj
+		$(LN) $(DLLLFLAGS) bfsvtab.obj -out:$@ $(DLLLIBS) 
         
-# sqlite3.exe: shell.c sqlite3.c
-#     $(CC) $(CFLAGSEXE) shell.c sqlite3.c $(DLLLIBS) -Fesqlite3.exe \
-#     -DSQLITE_THREADSAFE=0 \
-#     -DSQLITE_ENABLE_MATH_FUNCTIONS \
-#     -DSQLITE_ENABLE_EXPLAIN_COMMENTS \
-#     -DSQLITE_INTROSPECTION_PRAGMAS \
-#     -DSQLITE_ENABLE_UNKNOWN_SQL_FUNCTION \
-#     -DSQLITE_ENABLE_STMTVTAB \
-#     -DSQLITE_ENABLE_DBPAGE_VTAB \
-#     -DSQLITE_ENABLE_DBSTAT_VTAB \
-#     -DSQLITE_ENABLE_OFFSET_SQL_FUNC \
-#     -DSQLITE_ENABLE_JSON1 \
-#     -DSQLITE_ENABLE_RTREE \
-#     -DSQLITE_ENABLE_FTS4 \
-#     -DSQLITE_ENABLE_FTS5 \
-#     -DSQLITE_ENABLE_GEOPOLY \
-#     -DHAVE_SQLITETRACE=1
+sqlite3.exe: shell.c sqlite3.c
+    $(CC) $(CFLAGSEXE) shell.c sqlite3.c $(DLLLIBS) -Fesqlite3.exe \
+    -DSQLITE_THREADSAFE=0 \
+    -DSQLITE_ENABLE_MATH_FUNCTIONS \
+    -DSQLITE_ENABLE_EXPLAIN_COMMENTS \
+    -DSQLITE_INTROSPECTION_PRAGMAS \
+    -DSQLITE_ENABLE_UNKNOWN_SQL_FUNCTION \
+    -DSQLITE_ENABLE_STMTVTAB \
+    -DSQLITE_ENABLE_DBPAGE_VTAB \
+    -DSQLITE_ENABLE_DBSTAT_VTAB \
+    -DSQLITE_ENABLE_OFFSET_SQL_FUNC \
+    -DSQLITE_ENABLE_JSON1 \
+    -DSQLITE_ENABLE_RTREE \
+    -DSQLITE_ENABLE_FTS4 \
+    -DSQLITE_ENABLE_FTS5 \
+    -DSQLITE_ENABLE_GEOPOLY \
+    -DHAVE_SQLITETRACE=1
     
-# sqldiff.exe: sqldiff.c
-#     $(CC) $(CFLAGSEXE) sqlite3.c sqldiff.c $(DLLLIBS) -Fesqldiff.exe \
-#     -DSQLITE_THREADSAFE=0 \
-#     -DHAVE_SQLITETRACE=1
+sqldiff.exe: sqldiff.c
+    $(CC) $(CFLAGSEXE) sqlite3.c sqldiff.c sqlite3_stdio.c $(DLLLIBS) -Fesqldiff.exe \
+    -DSQLITE_THREADSAFE=0 \
+    -DHAVE_SQLITETRACE=1
 

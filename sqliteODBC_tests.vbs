@@ -194,82 +194,1162 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-        log dumpPragma
-        If Err.Number <> 0 Then wscript.quit -1
-        insertTests
-        If Err.Number <> 0 Then wscript.quit -1
-        dbSqlite3 = strFolder & "\testfile.sqlite3"
-        sqlite3_BuiltIn_Tests
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite3_rtree_tests
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite3_fts_tests
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite3_page_size_tests
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite3_feature_tests
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_big_numbers
-        If Err.Number <> 0 Then wscript.quit -1
-        recursiveCTE
-        If Err.Number <> 0 Then wscript.quit -1
-        generate_series
-        If Err.Number <> 0 Then wscript.quit -1
-        calendarExamples
-        If Err.Number <> 0 Then wscript.quit -1
-        graphExampleOne
-        If Err.Number <> 0 Then wscript.quit -1
-        graphExampleTwo
-        If Err.Number <> 0 Then wscript.quit -1
-        isValidIntOrFloat
-        If Err.Number <> 0 Then wscript.quit -1
-        varCharStringIssue
-        If Err.Number <> 0 Then wscript.quit -1
-        unicodeCharacterTest
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_extension_geopoly
-        If Err.Number <> 0 Then wscript.quit -1
 
-        ' 3.37, 3.38, 3.39 updates and improvements
-        sqlite_right_join
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_full_outer_join
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_isDistinctFrom
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_havingWithoutGroupBy
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_localtimeModifierMaintainsFractSecs
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_unixepochFunction
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_autoModifier
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_juliandayModifier
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_printf_format
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_strictTable
-        If Err.Number <> 0 Then wscript.quit -1
+        if true then
+            log dumpPragma
+            If Err.Number <> 0 Then wscript.quit -1
 
-        ' 3.46 updates and improvements
-        sqlite_double_quoted_strings
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_strftime
-        If Err.Number <> 0 Then wscript.quit -1
-        sqlite_json
-        If Err.Number <> 0 Then wscript.quit -1
+            insertTests
+            If Err.Number <> 0 Then wscript.quit -1
 
-        getTableInfoSimple
-        If Err.Number <> 0 Then wscript.quit -1
-        getTableInfoDetails
-        If Err.Number <> 0 Then wscript.quit -1
+            dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+            sqlite3_BuiltIn_Tests
+            If Err.Number <> 0 Then wscript.quit -1
 
-        ' JSON to do
-        sqlite_json_virtual_columns
-        If Err.Number <> 0 Then wscript.quit -1
+            sqlite3_rtree_tests
+            If Err.Number <> 0 Then wscript.quit -1
 
+            sqlite3_fts_tests
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite3_page_size_tests
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite3_feature_tests
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_big_numbers
+            If Err.Number <> 0 Then wscript.quit -1
+
+            recursiveCTE
+            If Err.Number <> 0 Then wscript.quit -1
+
+            generate_series
+            If Err.Number <> 0 Then wscript.quit -1
+
+            calendarExamples
+            If Err.Number <> 0 Then wscript.quit -1
+
+            graphExampleOne
+            If Err.Number <> 0 Then wscript.quit -1
+
+            graphExampleTwo
+            If Err.Number <> 0 Then wscript.quit -1
+            
+            isValidIntOrFloat
+            If Err.Number <> 0 Then wscript.quit -1
+
+            varCharStringIssue
+            If Err.Number <> 0 Then wscript.quit -1
+
+            unicodeCharacterTest
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_geopoly
+            If Err.Number <> 0 Then wscript.quit -1
+
+            ' 3.37, 3.38, 3.39 updates and improvements
+            sqlite_right_join
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_full_outer_join
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_isDistinctFrom
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_havingWithoutGroupBy
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_localtimeModifierMaintainsFractSecs
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_unixepochFunction
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_autoModifier
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_juliandayModifier
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_strictTable
+            If Err.Number <> 0 Then wscript.quit -1
+
+            ' 3.46 updates and improvements
+            sqlite_double_quoted_strings
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_strftime
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_json
+            If Err.Number <> 0 Then wscript.quit -1
+
+            getTableInfoSimple
+            If Err.Number <> 0 Then wscript.quit -1
+
+            getTableInfoDetails
+            If Err.Number <> 0 Then wscript.quit -1
+
+            ' JSON to do
+            sqlite_json_virtual_columns
+            If Err.Number <> 0 Then wscript.quit -1
+        
+            dbSqlite3 = strFolder & "\testDBs\crypto.sqlite3"
+            sqlite_extension_crypto
+            If Err.Number <> 0 Then wscript.quit -1
+
+        end if
+
+        if true then
+
+            dbSqlite3 = strFolder & "\testDBs\csv.sqlite3"
+            sqlite_extension_functions_csv
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_tests
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_checkfreelist
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_ieee754
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_regex
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_series
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_sha
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_totype
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_functions_wholenumber
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_uuid
+            If Err.Number <> 0 Then wscript.quit -1
+
+            dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+            sqlite_extension_bfsvtab
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_decimal
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_fileio
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_sqlfcmp_printf_format
+            If Err.Number <> 0 Then wscript.quit -1
+
+            ' vfsstat doesn't work in ODBC (can't load extension before opening db)
+            ' sqlite_extension_vfsstat
+            ' If Err.Number <> 0 Then wscript.quit -1
+
+
+        end if
+
+        ' r = number of rows to insert
+        ' c = number of columns per row
+        ' t = column data type (INTEGER, REAL, TEXT)
+        ' p = which driver to use (SQL3 or 
+        ' ipt = number of records per transaction
+        ' pk = use primary key (true/false)
+        ' pg = pipe "|" separated pragma string
+        ' function test(r,c,t,p,ipt,pk,pg)
+        ' test 100,10,"INTEGER","SQL3 ",100,true,"journal=OFF",true
+        ' test 100,10,"TEXT","SQL3 ",100,true,"journal=OFF",true
+
+        log "FINISHED!"
         on error goto 0
+    end function
+
+    '********************************************
+    public function sqlite_sqlfcmp_printf_format
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        'https://sqlite.org/forum/forumpost/9040b9c0b1532b5c
+        ' note the numbers here don't match website numbers exactly, but
+        ' DO match output from locally compiled SQLite3
+
+        log "******************************************************"
+        log "sqlite_sqlfcmp_printf_format (printf added 3.38.0)"
+        
+        opendb "MEM  "
+        log "load_extension('.\sqlfcmp.dll') will throw error but it does load the extension"
+        query2csv("SELECT load_extension('.\sqlfcmp.dll') as ext_loaded")
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+
+        query2csv("drop table if exists t;")
+        query2csv("create table t(c real);")
+        query2csv("insert into t values(.00001);")
+        query2csv("insert into t values(.00001);")
+        query2csv("insert into t values(.00001);")
+
+        query2csv("select format('%.5f', total(c)) from t;")
+        if aQueryResults(2)(0) <> """0.00003""" then retValue = retValue+1
+
+        query2csv("select format('%!.26f', c) from t;")
+        if aQueryResults(2).count <> 3 then retValue = retValue+1
+
+        query2csv("select format('%!.26f', total(c)) from t;")
+        if aQueryResults(2)(0) <> """0.00003000000000000000415""" then retValue = retValue+1
+
+        ' https://sqlite.org/forum/forumpost/f46ded7529d456d7
+        ' It is a scalar function that takes two arguments -- the first being the number to operate on, 
+        ' and the second optional argument being the number of significant digits to maintain, with the default being 14.
+        ' the "exactly rounded" result 
+        query2csv("select format('%!.26f', sigdigits(total(c))) from t;")
+        if aQueryResults(2)(0) <> """0.00003000000000000000076""" then retValue = retValue+1
+        
+        ' a diference of 1 ULP.
+        query2csv("select ulps(sigdigits(total(c)), total(c)) from t;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+
+        ' the values differ by 1 ULP so they are not equal (0)
+        query2csv("select total(c) == 3.0e-05 from t;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+
+        query2csv("select format('%!.26f', 100.00000000000000001) as value union all select format('%!.26f', 100.00000000000001);")
+        if aQueryResults(2)(0) <> """100.0""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """100.0000000000000142""" then retValue = retValue+1
+
+        query2csv("select ulps(100.00000000000000001,100.00000000000001) as u;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+        
+        closedb
+
+        log "connection string sqlfcmp"
+        opendb "SQL3-sqlfcmp"
+
+        query2csv("drop table if exists t;")
+        query2csv("create table t(c real);")
+        query2csv("insert into t values(.00001);")
+        query2csv("insert into t values(.00001);")
+        query2csv("insert into t values(.00001);")
+
+        query2csv("select format('%.5f', total(c)) from t;")
+        if aQueryResults(2)(0) <> """0.00003""" then retValue = retValue+1
+
+        query2csv("select format('%!.26f', c) from t;")
+        if aQueryResults(2).count <> 3 then retValue = retValue+1
+
+        query2csv("select format('%!.26f', total(c)) from t;")
+        if aQueryResults(2)(0) <> """0.00003000000000000000415""" then retValue = retValue+1
+
+        ' https://sqlite.org/forum/forumpost/f46ded7529d456d7
+        ' It is a scalar function that takes two arguments -- the first being the number to operate on, 
+        ' and the second optional argument being the number of significant digits to maintain, with the default being 14.
+        ' the "exactly rounded" result 
+        query2csv("select format('%!.26f', sigdigits(total(c))) from t;")
+        if aQueryResults(2)(0) <> """0.00003000000000000000076""" then retValue = retValue+1
+        
+        ' a diference of 1 ULP.
+        query2csv("select ulps(sigdigits(total(c)), total(c)) from t;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+
+        ' the values differ by 1 ULP so they are not equal (0)
+        query2csv("select total(c) == 3.0e-05 from t;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+
+        query2csv("select format('%!.26f', 100.00000000000000001) as value union all select format('%!.26f', 100.00000000000001);")
+        if aQueryResults(2)(0) <> """100.0""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """100.0000000000000142""" then retValue = retValue+1
+
+        query2csv("select ulps(100.00000000000000001,100.00000000000001) as u;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_fileio
+        log "****************************************************************************"
+        log "sqlite_extension_fileio"
+        
+        REM C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\sys\stat.h
+        REM #define _S_IFMT   0xF000 // File type mask
+        REM #define _S_IFDIR  0x4000 // Directory
+        REM #define _S_IFCHR  0x2000 // Character special
+        REM #define _S_IFIFO  0x1000 // Pipe
+        REM #define _S_IFREG  0x8000 // Regular
+        REM #define _S_IREAD  0x0100 // Read permission, owner
+        REM #define _S_IWRITE 0x0080 // Write permission, owner
+        REM #define _S_IEXEC  0x0040 // Execute/search permission, owner
+
+        logResult query2csv("SELECT load_extension('.\fileio.dll') as ext_loaded")
+
+        log "fileio dll does not work with SELECT load_extension(), so need to load via connection string"
+        opendb "SQL3-fileio"
+        
+        REM dump file info to table so we can look at schema
+        log query("drop table if exists [fileInfo_C_Temp];") 
+        log query("create table [fileInfo_C_Temp] as select * FROM fsdir('c:\temp');") 
+        log query("PRAGMA table_info('fileInfo_C_Temp');")
+        log query("select count(1) as numRecords from [fileInfo_C_Temp];")
+        
+        ' log "script crashes when blob is binary and large, and error handling does not catch issue"
+        ' log "so you can't so a select * or select with data field if folder contains large binary file."
+        ' log query("select name,mode,mtime,datetime(mtime, 'unixepoch','localtime') as reporttime from [fileInfo_C_Temp];")
+        
+        ' log "if $dir is provided, and $path is relative then $path interpreted relative to $dir"
+        ' log "if folder does not exist then this will fail..."
+        log query( _
+            "SELECT name, " & _
+            "printf('%08X',mode) as m, " & _
+            "( printf('%04X',(mode & 0xF000)) == '8000' ) as isFile, " & _
+            "( printf('%04X',(mode & 0xF000)) == '4000' ) as isDir, " & _
+            "( printf('%04X',(mode & 0x0100)) == '0100' ) as isRead, " & _
+            "( printf('%04X',(mode & 0x0080)) == '0080' ) as isWrite, " & _
+            "( printf('%04X',(mode & 0x0040)) == '0040' ) as isExe, " & _
+            "'' as theEnd " & _
+            "FROM fsdir('..\','c:\temp\folder');" & _
+            "")
+        ' log "same but with explicit path only passed to fsdir()"
+        log query( _
+            "SELECT name, " & _
+            "printf('%08X',mode) as m, " & _
+            "( printf('%04X',(mode & 0xF000)) == '8000' ) as isFile, " & _
+            "( printf('%04X',(mode & 0xF000)) == '4000' ) as isDir, " & _
+            "( printf('%04X',(mode & 0x0100)) == '0100' ) as isRead, " & _
+            "( printf('%04X',(mode & 0x0080)) == '0080' ) as isWrite, " & _
+            "( printf('%04X',(mode & 0x0040)) == '0040' ) as isExe, " & _
+            "'' as theEnd " & _
+            "FROM fsdir('c:\temp');" & _
+            "")
+            
+        ' log "read content of a text file where we know we can handle the blob in vbscript data types"
+        log query( "select cast( readfile('test.csv') as text) as fileContent;" )
+        
+        ' log "db table column 'data' contains binary contennts of MSI.gif, write that out to a new file"
+        ' log "if successful, writefile returns the number of bytes written. if not, empty recordset so nothing returned."
+        ' log query( "SELECT writefile('c:\temp\MSI_new.gif',data) as bytesWritten FROM [fileInfo_C_Temp] WHERE name='c:\temp/MSI.gif';")
+        
+        closedb
+    end function
+
+    '********************************************
+    public function sqlite_extension_decimal
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        ' extension works but type is ignored as shoown below
+
+        log "******************************************************"
+        log "sqlite_extension_decimal"
+        opendb "MEM  "
+        log "load_extension() throws error but works"
+        query2csv("SELECT load_extension('.\decimal.dll') as ext_loaded")
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+
+        query2csv("SELECT decimal(pi());")
+        query2csv("SELECT decimal_exp(pi())")
+        query2csv("SELECT decimal(X'4055480000000000')")
+        query2csv("SELECT decimal_mul(2, 3)")
+
+        query2csv("CREATE TABLE MyTable(X real,Y integer,Z text);")
+        query2csv("INSERT INTO MyTable VALUES (1.1,2,'100'),(2.2,4,'10'),(3.3,6,'1');")
+        query2csv("SELECT decimal_sum(X) as dc FROM MyTable;")
+        query2csv("SELECT decimal_add(X,Y) as d_a FROM MyTable;")
+        query2csv("SELECT decimal_sub(X,Y) as d_s FROM MyTable;")
+        query2csv("SELECT decimal_mul(X,Y) as d_m FROM MyTable;")
+        query2csv("SELECT decimal_pow2(Y) as d_p FROM MyTable;")
+
+        ' text converted to high precision decimal so...
+        ' returns 1 --> first value is greater than second value
+        query2csv("select decimal_cmp('100.00000000000000001', '100.00000000000000000') as d_c;")
+        if cint(aQueryResults(2)(0)) <> 1 then retValue = retValue+1
+        ' returns 0 --> first value is equal to second value
+        query2csv("select decimal_cmp('100.00000000000000000', '100.00000000000000000') as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        ' returns -1 --> first value is less than second value
+        query2csv("select decimal_cmp('100.00000000000000000', '100.00000000000000001') as d_c;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+
+        ' these numbers cannot be represented by double so with rounding these all return 0 (equal)
+        query2csv("select decimal_cmp(100.00000000000000001, 100.00000000000000000) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        query2csv("select decimal_cmp(100.00000000000000000, 100.00000000000000000) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        query2csv("select decimal_cmp(100.00000000000000000, 100.00000000000000001) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+
+        closedb
+
+        log "connection string"
+        opendb "SQL3-decimal"
+
+        query2csv("SELECT decimal(pi());")
+        query2csv("SELECT decimal_exp(pi())")
+        query2csv("SELECT decimal(X'4055480000000000')")
+        query2csv("SELECT decimal_mul(2, 3)")
+
+        query2csv("CREATE TABLE MyTable(X real,Y integer,Z text);")
+        query2csv("INSERT INTO MyTable VALUES (1.1,2,'100'),(2.2,4,'10'),(3.3,6,'1');")
+        query2csv("SELECT decimal_sum(X) as dc FROM MyTable;")
+        query2csv("SELECT decimal_add(X,Y) as d_a FROM MyTable;")
+        query2csv("SELECT decimal_sub(X,Y) as d_s FROM MyTable;")
+        query2csv("SELECT decimal_mul(X,Y) as d_m FROM MyTable;")
+        query2csv("SELECT decimal_pow2(Y) as d_p FROM MyTable;")
+
+        ' text converted to high precision decimal so...
+        ' returns 1 --> first value is greater than second value
+        query2csv("select decimal_cmp('100.00000000000000001', '100.00000000000000000') as d_c;")
+        if cint(aQueryResults(2)(0)) <> 1 then retValue = retValue+1
+        ' returns 0 --> first value is equal to second value
+        query2csv("select decimal_cmp('100.00000000000000000', '100.00000000000000000') as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        ' returns -1 --> first value is less than second value
+        query2csv("select decimal_cmp('100.00000000000000000', '100.00000000000000001') as d_c;")
+        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+
+        ' these numbers cannot be represented by double so with rounding these all return 0 (equal)
+        query2csv("select decimal_cmp(100.00000000000000001, 100.00000000000000000) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        query2csv("select decimal_cmp(100.00000000000000000, 100.00000000000000000) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+        query2csv("select decimal_cmp(100.00000000000000000, 100.00000000000000001) as d_c;")
+        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
+
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_vfsstat 
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        log "****************************************************************************"
+        log "sqlite_extension_vfsstat"
+        
+        REM ******************************
+        REM NOTE
+        REM ******************************
+        REM this works in sqlite3.exe so the extension is ok, just doesn't work via ODBC
+        REM could the problem be that you need to load the extension **BEFORE** opening DB?
+        REM .load ./vfsstat
+        REM .open test.db
+        REM DROP TABLE IF EXISTS t1;
+        REM CREATE TABLE t1(x,y);
+        REM INSERT INTO t1 VALUES(123, randomblob(5000));
+        REM CREATE INDEX t1x ON t1(x);
+        REM DROP TABLE t1;
+        REM VACUUM;
+        REM SELECT * FROM vfsstat WHERE count>0;
+        REM ┌──────────┬──────────────┬───────┐
+        REM │   file   │     stat     │ count │
+        REM ├──────────┼──────────────┼───────┤
+        REM │ database │ bytes-in     │ 96    │
+        REM │ database │ bytes-out    │ 40960 │
+        REM │ database │ read         │ 9     │
+        REM │ database │ write        │ 10    │
+        REM │ database │ sync         │ 5     │
+        REM │ database │ open         │ 1     │
+        REM │ database │ lock         │ 32    │
+        REM │ journal  │ bytes-out    │ 31348 │
+        REM │ journal  │ read         │ 5     │
+        REM │ journal  │ write        │ 31    │
+        REM │ journal  │ sync         │ 10    │
+        REM │ journal  │ open         │ 5     │
+        REM │ *        │ access       │ 18    │
+        REM │ *        │ delete       │ 5     │
+        REM │ *        │ fullpathname │ 1     │
+        REM │ *        │ randomness   │ 1     │
+        REM └──────────┴──────────────┴───────┘
+
+        dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+        opendb "SQL3 "
+        logResult query2csv("SELECT load_extension('.\vfsstat.dll') as ext_loaded")
+        logResult query2csv("DROP TABLE IF EXISTS t1;")
+        logResult query2csv("CREATE TABLE t1(x integer,y blob);")
+        logResult query2csv("INSERT INTO t1 VALUES(123, randomblob(5000));")
+        logResult query2csv("CREATE INDEX t1x ON t1(x);")
+        logResult query2csv("SELECT name FROM sqlite_master;")
+        logResult query2csv("select * from t1;")
+        logResult query2csv("DROP TABLE IF EXISTS t1;")
+        logResult query2csv("SELECT name FROM sqlite_master;")
+        logResult query2csv("VACUUM;")
+        logResult query2csv("SELECT * FROM vfsstat;")
+        closedb
+        
+    end function
+
+    '********************************************
+    public function sqlite_extension_bfsvtab
+        ' https://github.com/abetlen/sqlite3-bfsvtab-ext
+        dim s: s = ""
+        dim retValue: retValue = 0
+        dim sSql
+
+        log "******************************************************"
+        log "sqlite_extension_bfsvtab"
+        opendb "SQL3 "
+        log "load_extension(bfsvtab.dll)"
+        query2csv("SELECT load_extension('.\bfsvtab.dll') as ext_loaded")
+        if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
+
+        query("create table edges(fromNode integer, toNode integer);")
+        query("insert into edges(fromNode, toNode) values (1, 2),(1, 3),(2, 4),(3, 4);")
+
+        ' Find the shortest path from node 1 to node 4
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1          and " & _
+            "    id         = 4;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+
+        ' Find the minimum distance from node 1 to all nodes
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 4 then retValue = retValue+1
+
+        ' Return the edge set of a spanning tree rooted at node 1
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1          and " & _
+            "    parent     is not null;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 3 then retValue = retValue+1
+
+        closedb
+
+        log "connection string"
+        opendb "SQL3-bfsvtab"
+
+        ' Find the shortest path from node 1 to node 4
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1          and " & _
+            "    id         = 4;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+
+        ' Find the minimum distance from node 1 to all nodes
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 4 then retValue = retValue+1
+
+        ' Return the edge set of a spanning tree rooted at node 1
+        sSql = _
+            "select  " & _
+            "  id, distance  " & _
+            "  from bfsvtab  " & _
+            "  where  " & _
+            "    tablename  = 'edges'    and " & _
+            "    fromcolumn = 'fromNode' and " & _
+            "    tocolumn   = 'toNode'   and " & _
+            "    root       = 1          and " & _
+            "    parent     is not null;"
+        query2csv(sSql)
+        if aQueryResults(2).count <> 3 then retValue = retValue+1
+        
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_uuid 
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        log "******************************************************"
+        log "sqlite_extension_uuid"
+        opendb "MEM  "
+        log "load_extension() throws error but works"
+        logResult query2csv("SELECT load_extension('.\uuid.dll') as ext_loaded")
+        logResult query2csv("select uuid() as uv4")
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+        retValue = retValue+uuid_tests
+        closedb
+
+        log "connection string"
+        opendb "SQL3-uuid"
+        logResult query2csv("select uuid() as uv4")
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+        retValue = retValue+uuid_tests
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function uuid_tests
+        log "****************************************"
+        log "****************************************"
+        log "****************************************"
+        dim retValue: retValue = 0
+        dim i
+        dim aa
+        dim a: a = Array( _
+            "A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11",_
+            "{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}",_
+            "a0eebc999c0b4ef8bb6d6bb9bd380a11",_
+            "a0ee-bc99-9c0b-4ef8-bb6d-6bb9-bd38-0a11",_
+            "{a0eebc99-9c0b4ef8-bb6d6bb9-bd380a11", _
+            "{a0eebc99-9c0b4ef8-bb6d6bb9-bd380a11}", _
+            "A0EEBC99-9C0B4EF8-BB6D-6BB9BD380A11",_
+            "0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11",_
+            "{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",_
+            "a0eebc999c0b4ef8bb6d6bb9bd380a1",_
+            "a0ee-bc99-9c0b-4ef8-bb6d-6bb9-a11",_
+            "{a0eebc{99-9c0b4ef8-bb6d6bb9-bd380a11}" _ 
+        )
+        i=0
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=1
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=2
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=3
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=4
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=5
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        i=6
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        ' missing A at beginning"
+        i=7
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> "Null" then retValue = retValue+1
+        if aa(1) <> "Null" then retValue = retValue+1
+
+        '  missing '}' but ok"
+        i=8
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> """a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11""" then retValue = retValue+1
+        if aa(1) <> "A0EEBC999CB4EF8BB6D6BB9BD38A11" then retValue = retValue+1
+
+        ' number of digits < 16"
+        i=9
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> "Null" then retValue = retValue+1
+        if aa(1) <> "Null" then retValue = retValue+1
+
+        ' number of digits < 16"
+        i=10
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> "Null" then retValue = retValue+1
+        if aa(1) <> "Null" then retValue = retValue+1
+
+        ' stray '{'"
+        i=11
+        logResult query2csv("select uuid_str('" & a(i) & "') as us, uuid_blob('" & a(i) & "') as ub")
+        aa = split(aQueryResults(2)(0),",")
+        if aa(0) <> "Null" then retValue = retValue+1
+        if aa(1) <> "Null" then retValue = retValue+1
+
+        uuid_tests = retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_wholenumber
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        opendb "MEM  "
+        log "******************************************************"
+        log "sqlite_extension_functions_wholenumber"
+        log "wholenumber extension dll works with SELECT load_extension()"
+        log query("SELECT load_extension('.\wholenumber.dll') as loaded;")
+        log getSortedFunctionList("whole") & vbcrlf
+        log query("drop table if exists nums;")
+        log query("CREATE VIRTUAL TABLE nums USING wholenumber;")
+        logResult query2csv("SELECT value FROM nums WHERE value<10;")
+        if aQueryResults(2).count <> 9 then retValue = retValue+1
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        if aQueryResults(2)(8) <> 9 then retValue = retValue+1
+        closedb
+
+        opendb "SQL3-wholenumber"
+        log getSortedFunctionList("whole") & vbcrlf
+        log query("drop table if exists nums;")
+        log query("CREATE VIRTUAL TABLE nums USING wholenumber;")
+        logResult query2csv("SELECT value FROM nums WHERE value<10;")
+        if aQueryResults(2).count <> 9 then retValue = retValue+1
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        if aQueryResults(2)(8) <> 9 then retValue = retValue+1
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_totype
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        log "******************************************************"
+        log "sqlite_extension_functions_totype"
+        log "totype extension dll does not work with SELECT load_extension()"
+        opendb "SQL3-totype"
+        ' If X is an integer, real, or string value that can be
+        ' losslessly represented as an integer, then tointeger(X)
+        ' returns the corresponding integer value.
+        ' If X is an 8-byte BLOB then that blob is interpreted as
+        ' a signed two-compliment little-endian encoding of an integer
+        ' and tointeger(X) returns the corresponding integer value.
+        ' Otherwise tointeger(X) return NULL.
+        log getSortedFunctionList("tointeger")
+        logResult query2csv("SELECT tointeger(8) as i,tointeger(8) as r, tointeger('8') as s;")
+        if aQueryResults(2)(0) <> "8,8,8" then retValue = retValue+1
+        logResult query2csv("SELECT tointeger(8.1) as i,tointeger(8.1) as r, tointeger('8.1') as s;")
+        if aQueryResults(2)(0) <> "Null,Null,Null" then retValue = retValue+1
+        logResult query2csv("SELECT tointeger(8.9) as i,tointeger(8.9) as r, tointeger('8.9') as s;")
+        if aQueryResults(2)(0) <> "Null,Null,Null" then retValue = retValue+1
+
+        ' If X is an integer, real, or string value that can be
+        ' convert into a real number, preserving at least 15 digits
+        ' of precision, then toreal(X) returns the corresponding real value.
+        ' If X is an 8-byte BLOB then that blob is interpreted as
+        ' a 64-bit IEEE754 big-endian floating point value
+        ' and toreal(X) returns the corresponding real value.
+        ' Otherwise toreal(X) return NULL.
+        log getSortedFunctionList("toreal")
+        logResult query2csv("SELECT toreal(8) as i,toreal(8) as r, toreal('8') as s;")
+        if aQueryResults(2)(0) <> "8,8,8" then retValue = retValue+1
+        logResult query2csv("SELECT toreal(8.1) as i,toreal(8.1) as r, toreal('8.1') as s;")
+        if aQueryResults(2)(0) <> "8.1,8.1,8.1" then retValue = retValue+1
+        logResult query2csv("SELECT toreal(8.9) as i,toreal(8.9) as r, toreal('8.9') as s;")
+        if aQueryResults(2)(0) <> "8.9,8.9,8.9" then retValue = retValue+1
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_sha
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        opendb "MEM  "
+        log "******************************************************"
+        log "sqlite_extension_functions_sha"
+        log "load_extension() throws error, but sha3 methods are loaded (Function sequence error)"
+        log query("SELECT load_extension('.\shathree.dll') as loaded;")
+        query2csv("SELECT sha3(1) = sha3('1');")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("SELECT sha3('hello') = sha3(x'68656c6c6f');")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES('xyzzy')) SELECT sha3_agg(x) = sha3('T5:xyzzy') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(x'010203')) SELECT sha3_agg(x) = sha3(x'42333a010203') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(0x123456)) SELECT sha3_agg(x) = sha3(x'490000000000123456') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(100.015625)) SELECT sha3_agg(x) = sha3(x'464059010000000000') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(NULL)) SELECT sha3_agg(x) = sha3('N') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        closedb
+        
+        opendb "SQL3-sha"
+        log "loading via connection string works"
+        query2csv("SELECT sha3(1) = sha3('1');")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("SELECT sha3('hello') = sha3(x'68656c6c6f');")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES('xyzzy')) SELECT sha3_agg(x) = sha3('T5:xyzzy') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(x'010203')) SELECT sha3_agg(x) = sha3(x'42333a010203') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(0x123456)) SELECT sha3_agg(x) = sha3(x'490000000000123456') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(100.015625)) SELECT sha3_agg(x) = sha3(x'464059010000000000') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        query2csv("WITH a(x) AS (VALUES(NULL)) SELECT sha3_agg(x) = sha3('N') FROM a;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_series
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        opendb "SQL3 "
+
+        logResult query2csv("select * from PRAGMA_function_list where name like '%series%';") & vbcrlf
+
+        log "******************************************************"
+        log "sqlite_extension_functions_series"
+        log "not loaded..."
+        log query("SELECT * FROM generate_series(0,100,5);")
+        log query("SELECT load_extension('.\series.dll') as loaded;")
+        log "but not showing up...maybe because it is table-valued-function using a virtual table. "
+        s = getSortedFunctionList("series")
+        if instr(s, "no items") = 0 then retValue = retValue + 1
+        log "load_extension(series.dll) " & retValue
+        'logResult query2csv("select * from PRAGMA_function_list where name like '%series%';")
+        log "...but is is there...generate_series() expect values from 0 to 100 in steps of 5"
+        query2csv("SELECT * FROM generate_series(0,100,5);")
+        if aQueryResults(2).count <> 21 then retValue = retValue+1
+        if aQueryResults(2)(0) <> 0 then retValue = retValue+1
+        if aQueryResults(2)(20) <> 100 then retValue = retValue+1
+        closedb
+        
+        opendb "SQL3-series"
+        s = getSortedFunctionList("series")
+        if instr(s, "no items") = 0 then retValue = retValue + 1
+        log "connection string " & retValue
+        log getSortedFunctionList("series") & vbcrlf
+        'logResult query2csv("select * from PRAGMA_function_list where name like '%series%';")
+        log "...but is is there...generate_series() expect values from 0 to 100 in steps of 5"
+        query2csv("SELECT * FROM generate_series(0,100,5);")
+        if aQueryResults(2).count <> 21 then retValue = retValue+1
+        if aQueryResults(2)(0) <> 0 then retValue = retValue+1
+        if aQueryResults(2)(20) <> 100 then retValue = retValue+1
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_regex
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        log "******************************************************"
+        log "sqlite_extension_functions_regex"
+        opendb "SQL3 "
+        
+        s =  getSortedFunctionList("regexp")
+        if instr(s, "no items") = 0 then retValue = retValue + 1
+        log "regexp not builtin for ODBC driver " & retValue
+        
+        log query("SELECT load_extension('.\regexp.dll') as loaded")
+        s = getSortedFunctionList("regexp")
+        if instr(s, "no items") > 0 then retValue = retValue + 1
+        log "load_extension errors (Function sequence error) but REGEXP works " & retValue
+
+        query2csv("select 'foobar' regexp 'foo';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'foobar' regexp 'bar';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'Retroactively relinquishing remunerations is reprehensible.' regexp ' \w{13} ';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'Meet me at 10:30' regexp '\d+:\d+';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        closedb
+
+        opendb "SQL3-LoadExt-Regexp"
+        s = getSortedFunctionList("regexp")
+        if instr(s, "no items") > 0 then retValue = retValue + 1
+        log "can be loaded via connection string " & retValue
+
+        query2csv("select 'foobar' regexp 'foo';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'foobar' regexp 'foo';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'foobar' regexp 'bar';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'Retroactively relinquishing remunerations is reprehensible.' regexp ' \w{13} ';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        query2csv("select 'Meet me at 10:30' regexp '\d+:\d+';")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+
+        closedb
+
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_ieee754
+        dim s: s = ""
+        dim retValue: retValue = 0
+        log "******************************************************"
+        log "sqlite_extension_functions_ieee754"
+        REM "ieee754.dll does not work with SELECT load_extension()"
+        opendb "SQL3-ieee754"
+        ' log query("select * from PRAGMA_function_list where name like '%ieee%';") & vbcrlf
+        ' log getSortedFunctionList("ieee") & vbcrlf
+        log ""
+        query2csv("SELECT ieee754(45.25) as r;")
+        if aQueryResults(2)(0) <> """ieee754(181,-2)""" then retValue = retValue+1
+        query2csv("SELECT ieee754(181,-2) as r;")
+        if aQueryResults(2)(0) <> "45.25" then retValue = retValue+1
+        query2csv("SELECT ieee754_mantissa(45.25) as m, ieee754_exponent(45.25) as e;")
+        if aQueryResults(2)(0) <> "181,-2" then retValue = retValue+1
+        query2csv("SELECT ieee754_to_blob(1) as r;")
+        if aQueryResults(2)(0) <> "3FF0000000000000" then retValue = retValue+1
+        query2csv("SELECT ieee754_from_blob(x'3ff0000000000000') as r;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue+1
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_checkfreelist
+        dim s: s = ""
+        dim retValue: retValue = 0
+        log "****************************************************************************"
+        log "checkfreelist - needs to be loaded via connection string"
+        opendb "SQL3-checkfreelist"
+        query2csv("SELECT checkfreelist('main');")
+        if aQueryResults(2)(0) <> """ok""" then retValue = retValue+1
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_tests
+        dim retValue: retValue = 0
+        log "******************************************************"
+        log "sqlite_extension_functions_tests"
+        opendb "MEM  "
+        log "load_extension(extension-functions.dll)"
+        query2csv("SELECT load_extension('.\extension-functions.dll') as ext_loaded")
+        retValue = retValue+sqlite3_extension_functions
+        closedb
+        log "******************************************************"
+        log "via connection string"
+        opendb "SQL3-LoadExt-ExtFun"
+        retValue = retValue+sqlite3_extension_functions
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite3_extension_functions
+        dim s: s = ""
+        dim retValue: retValue = 0
+
+        log "****************************************************************************"
+        log "sqlite3_extension_functions"
+        ' charindex(S1,S2)
+        query2csv("select charindex('world','hello world!') as x;")
+        if aQueryResults(2)(0) <> 7 then retValue = retValue+1
+        ' charindex(S1,S2,N)
+        query2csv("select charindex('world','hello world! hello world!',10) as x;")
+        if aQueryResults(2)(0) <> 20 then retValue = retValue+1
+        ' leftstr(S,N)
+        query2csv("select leftstr('hello world!',5) as x;")
+        if aQueryResults(2)(0) <> """hello""" then retValue = retValue+1
+        ' padc(S,N)
+        query2csv("select '|', padc('10',50) as x, '|';")
+        if aQueryResults(2)(0) <> """|"",""                        10                        "",""|""" then retValue = retValue+1
+        ' padl(S,N)
+        query2csv("select '|', padl('10',50) as x, '|';")
+        if aQueryResults(2)(0) <> """|"",""                                                10"",""|""" then retValue = retValue+1
+        ' padr(S,N)
+        query2csv("select '|', padr('10',50) as x, '|';")
+        if aQueryResults(2)(0) <> """|"",""10                                                "",""|""" then retValue = retValue+1
+        ' ' proper(S)
+        query2csv("select proper('hElLo WoRlD!') as x;")
+        if aQueryResults(2)(0) <> """Hello World!""" then retValue = retValue+1
+        ' ' replicate(S,N)
+        query2csv("select replicate('hElLo WoRlD fIvE tImEs!',5) as x;")
+        if aQueryResults(2)(0) <> """hElLo WoRlD fIvE tImEs!hElLo WoRlD fIvE tImEs!hElLo WoRlD fIvE tImEs!hElLo WoRlD fIvE tImEs!hElLo WoRlD fIvE tImEs!""" then retValue = retValue+1
+        ' ' reverse(S)
+        query2csv("select reverse('hElLo WoRlD!') as x;")
+        if aQueryResults(2)(0) <> """!DlRoW oLlEh""" then retValue = retValue+1
+        ' ' rightstr(S,N)
+        query2csv("select rightstr('hello world!',6) as x;")
+        if aQueryResults(2)(0) <> """world!""" then retValue = retValue+1
+        ' ' strfilter(S1,S2)
+        query2csv("select strfilter('hello world!','o!') as x;")
+        if aQueryResults(2)(0) <> """oo!""" then retValue = retValue+1
+
+        query("SELECT load_extension('.\csv.dll') as loaded")
+        query("CREATE VIRTUAL TABLE temp.t1 USING csv(filename='test.csv',header=true)")
+        
+        ' lower_quartile(X) 
+        query2csv("select lower_quartile(col_1) as x from t1;")
+        if aQueryResults(2)(0) <> 1.5 then retValue = retValue+1
+        ' median(X)
+        query2csv("select median(col_1) as x from t1;")
+        if aQueryResults(2)(0) <> 2.5 then retValue = retValue+1
+        ' mode(X)
+        query2csv("select mode(col_2) as x from t1;")
+        if aQueryResults(2)(0) <> 2 then retValue = retValue+1
+        ' stdev(X)
+        query2csv("select stdev(col_1) as x from t1;")
+        if aQueryResults(2)(0) <> 1.29099444873581 then retValue = retValue+1
+        ' upper_quartile(X)
+        query2csv("select upper_quartile(col_1) as x from t1;")
+        if aQueryResults(2)(0) <> 3.5 then retValue = retValue+1
+        ' variance(X)
+        query2csv("select variance(col_1) as x from t1;")
+        if aQueryResults(2)(0) <> 1.66666666666667 then retValue = retValue+1
+        
+        query("drop table if exists t1.temp;")
+
+        sqlite3_extension_functions = retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_csv
+        dim s: s = ""
+        dim retValue: retValue = 0
+       
+        log "******************************************************"
+        log "sqlite_extension_functions_csv"
+        opendb "SQL3 "
+        log "load_extension(csv.dll) "
+        log query("SELECT load_extension('.\csv.dll') as loaded")
+        log query("CREATE VIRTUAL TABLE temp.t1 USING csv(filename='test.csv',header=true)")
+        logResult query2csv(" SELECT * FROM t1")
+        s = aQueryResults(2).count & "x" & ubound(split(aQueryResults(2)(0),","))+1
+        if s <> "4x5" then retValue = retValue + 1
+        closedb
+        log ""
+        
+        opendb "SQL3-LoadExt-Csv"
+        log "CSV Virtual Table via connection string"
+        log query("CREATE VIRTUAL TABLE temp.t1 USING csv(filename='test.csv',header=true)")
+        logResult query2csv(" SELECT * FROM t1")
+        s = aQueryResults(2).count & "x" & ubound(split(aQueryResults(2)(0),","))+1
+        if s <> "4x5" then retValue = retValue + 1
+        closedb
+
+        if retValue <> 0 then err.raise 1
+    end function
+
+    '********************************************
+    public function sqlite_extension_crypto 
+        log "******************************************************"
+        log "sqlite_extension_crypto"
+
+        dim ss: ss = ""
+        dim retValue: retValue = 0
+
+        opendb "MEM  "
+        ss = getSortedFunctionList("md5")
+        if instr(ss, "no items") = 0 then retValue = retValue + 1
+        log retValue
+        closedb
+        log ""
+  
+        opendb "SQL3 "
+        log "load_extension(crypto.dll)"
+        query2csv("SELECT load_extension('crypto.dll') as ext_loaded")
+        query2csv("select hex(md5('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha1('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""A9993E364706816ABA3E25717850C26C9CD0D89D"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha256('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha384('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED8086072BA1E7CC2358BAECA134C825A7"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha512('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"""))
+        log retValue & " " & aQueryResults(2)(0)
+        closedb
+        log ""
+
+        log "load_extension() via connection string."
+        opendb "SQL3-crypto"
+        query2csv("select hex(md5('abc'));")
+        retValue = retValue +  strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72""")
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha1('abc'));")
+        retValue = retValue +  strcomp(aQueryResults(2)(0),"""A9993E364706816ABA3E25717850C26C9CD0D89D""")
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha256('abc'));")
+        retValue = retValue +  strcomp(aQueryResults(2)(0),"""BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD""")
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha384('abc'));")
+        retValue = retValue +  strcomp(aQueryResults(2)(0),"""CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED8086072BA1E7CC2358BAECA134C825A7""")
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha512('abc'));")
+        retValue = retValue +  strcomp(aQueryResults(2)(0),"""DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F""")
+        log retValue & " " & aQueryResults(2)(0)
+        closedb
+        log ""
+
+        if retValue > 0 then err.raise retValue
+
     end function
 
     '********************************************
@@ -600,30 +1680,6 @@ class classSqliteOdbcTests
         log "force number to the left to be interreted as julianday"
         logResult query2csv("SELECT datetime(2459759.67224309,'julianday') as j;")
         logResult query2csv("SELECT datetime(2459759,'julianday') as j;")
-        closedb
-    end function
-    
-    '********************************************
-    public function sqlite_printf_format
-        log "******************************************************"
-        log "sqlite_printf_format (added 3.38.0)"
-        
-        opendb "MEM  "
-        log "printf and format produce the same result"
-        logResult query2csv( _
-            "with sig(prec, sig) as " & _
-            "     ( " & _
-            "      values ('binary16',11), " & _
-            "             ('binary32',24), " & _
-            "             ('binary64',53), " & _
-            "             ('binary128',113), " & _
-            "             ('binary256',237) " & _
-            "     ) " & _
-            "select prec,  " & _
-            "       format('%!.17f', sig) as f, " & _
-            "       printf('%!.17f', sig) as p " & _
-            "  from sig; " _
-        )
         closedb
     end function
     
@@ -1793,8 +2849,11 @@ class classSqliteOdbcTests
     
     '********************************************
     public function sqlite_version
+        dim oShell: Set oShell = WScript.CreateObject("WScript.Shell")
+        dim proc_arch: proc_arch = oShell.ExpandEnvironmentStrings("%PROCESSOR_ARCHITECTURE%")
+        set oShell = nothing
         log "****************************************************************************"
-        log "sqlite_version"
+        log "sqlite_version arch = " & proc_arch
         opendb "MEM  "
         log query("SELECT sqlite_version() as vers, sqlite_source_id() as srcId;")
         closedb
@@ -1932,80 +2991,129 @@ class classSqliteOdbcTests
 
     '********************************************
     public function sqlite_math_functions
+        dim retValue: retValue = 0
         log "****************************************************************************"
         log "sqlite_math_functions"
-        log query("select acos(30*3.14159/180) as x;")
+        query2csv("select acos(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' acosh(X)
-        log query("select acosh(30*3.14159/180) as x;")
+        query2csv("select acosh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' asin(X)
-        log query("select asin(30*3.14159/180) as x;")
+        query2csv("select asin(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' asinh(X)
-        log query("select asinh(30*3.14159/180) as x;")
+        query2csv("select asinh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' atan(X)
-        log query("select atan(30*3.14159/180) as x;")
+        query2csv("select atan(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' atanh(X)
-        log query("select atanh(30*3.14159/180) as x;")
+        query2csv("select atanh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
         ' atan2(X,Y)
-        log query("select atan2(4,5) as x;")
-        ' atn2(X,Y) FAILS function not available
-        log query("select atn2(4,5) as x;")
-        ' ceil(X)
-        log query("select ceil(1.1) as x;")
-        ' ceiling(X)
-        log query("select ceiling(1.1) as x;")
-        ' cos(X)
-        log query("select cos(30*3.14159/180) as x;")
-        ' cosh(X)
-        log query("select cosh(30*3.14159/180) as x;")
-        ' cot(X) FAILS function not available
-        log query("select cot(30*3.14159/180) as x;")
-        ' coth(X) FAILS function not available
-        log query("select coth(30*3.14159/180) as x;")
-        ' degrees(X)
-        log query("select degrees(30*3.14159/180) as x;")
-        ' exp(X)
-        log query("select exp(2) as x;")
-        ' floor(X)
-        log query("select floor(1.1) as w, floor(1.9) as x, floor(-1.1) as y, floor(-1.9) as z;")
-        ' ln(X)
-        log query("select ln(10) as x;")
-        ' log(B,X)
-        log query("select log(2,10) as x,log(10,10) as y,log(16,10) as z;")
-        ' log(X)
-        log ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        log query("select log(10) as x;")
-        log "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-        ' log10(X)
-        log query("select log10(10) as x;")
-        ' log2(X)
-        log query("select log2(10) as x;")
-        ' mod(X,Y)
-        log query("select mod(10,10) as x, mod(10,11) as y;")
-        ' pi()
-        log query("select pi() as x;")
-        ' pow(X,Y)
-        log query("select pow(2,2) as x;")
-        ' power(X,Y)
-        log query("select power(2,2) as x;")
-        ' radians(X)
-        log query("select radians(180) as x;")
-        ' sign(X)
-        log query("select sign(-10) as x, sign(10) as y;")
-        ' sin(X)
-        log query("select sin(30*3.14159/180) as x;")
-        ' sinh(X)
-        log query("select sinh(30*3.14159/180) as x;")
-        ' sqrt(X)
-        log query("select sqrt(4) as x;")
-        ' square(X) FAILS function not available
-        log query("select square(4) as x;")
-        ' tan(X)
-        log query("select tan(30*3.14159/180) as x;")
-        ' tanh(X)
-        log query("select tanh(30*3.14159/180) as x;")
-        ' trunc(X)
-        log query("select trunc(1.123) as x, trunc(1.9) as y;")
+        query2csv("select atan2(4,5) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
 
+        ' atn2(X,Y) FAILS function not available
+        query2csv("select atn2(4,5) as x;")
+        if instr(aQueryResults(3), "no such function") <= 0 then retValue = retValue + 1
+        
+        ' ceil(X)
+        query2csv("select ceil(1.1) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' ceiling(X)
+        query2csv("select ceiling(1.1) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' cos(X)
+        query2csv("select cos(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' cosh(X)
+        query2csv("select cosh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+
+        ' cot(X) FAILS function not available
+        query2csv("select cot(30*3.14159/180) as x;")
+        if instr(aQueryResults(3), "no such function") <= 0 then retValue = retValue + 1
+
+        ' coth(X) FAILS function not available
+        query2csv("select coth(30*3.14159/180) as x;")
+        if instr(aQueryResults(3), "no such function") <= 0 then retValue = retValue + 1
+
+        ' degrees(X)
+        query2csv("select degrees(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' exp(X)
+        query2csv("select exp(2) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' floor(X)
+        query2csv("select floor(1.1) as w, floor(1.9) as x, floor(-1.1) as y, floor(-1.9) as z;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' ln(X)
+        query2csv("select ln(10) as x;")
+        if aQueryResults(2)(0) <> "2.30258509299405" then retValue = retValue + 1
+
+        ' log(B,X)
+        query2csv("select log(2,10) as x,log(10,10) as y,log(16,10) as z;")
+        if aQueryResults(2)(0) <> "3.32192809488736,1,0.830482023721841" then retValue = retValue + 1
+
+        ' log(X)
+        query2csv("select log(10) as x;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue + 1
+
+        ' log10(X)
+        query2csv("select log10(10) as x;")
+        if aQueryResults(2)(0) <> 1 then retValue = retValue + 1
+
+        ' log2(X)
+        query2csv("select log2(10) as x;")
+        if aQueryResults(2)(0) <> "3.32192809488736" then retValue = retValue + 1
+
+        ' mod(X,Y)
+        query2csv("select mod(10,10) as x, mod(10,11) as y;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' pi()
+        query2csv("select pi() as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' pow(X,Y)
+        query2csv("select pow(2,2) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' power(X,Y)
+        query2csv("select power(2,2) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' radians(X)
+        query2csv("select radians(180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' sign(X)
+        query2csv("select sign(-10) as x, sign(10) as y;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' sin(X)
+        query2csv("select sin(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' sinh(X)
+        query2csv("select sinh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' sqrt(X)
+        query2csv("select sqrt(4) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+
+        ' square(X) FAILS function not available
+        query2csv("select square(4) as x;")
+        if instr(aQueryResults(3), "no such function") <= 0 then retValue = retValue + 1
+
+
+        ' tan(X)
+        query2csv("select tan(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+        ' tanh(X)
+        query2csv("select tanh(30*3.14159/180) as x;")
+        if len(aQueryResults(3)) <> 0 then retValue = retValue + 1
+
+        ' trunc(X)
+        query2csv("select trunc(1.123) as x, trunc(1.9) as y;")
+        if aQueryResults(2)(0) <> "1,1" then retValue = retValue + 1
+
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
@@ -2321,11 +3429,11 @@ class classSqliteOdbcTests
                                     if instr(p,"SQL") > 0 then 
                                         dim pg: for each pg in apg
                                             REM log r & " " & c & " " & t & " " & p & " " & ipt & " " & pk
-                                            test r,c,t,p,ipt,pk,pg
+                                            test r,c,t,p,ipt,pk,pg,true
                                         next
                                     else
                                         REM log r & " " & c & " " & t & " " & p & " " & ipt & " " & pk
-                                        test r,c,t,p,ipt,pk,""
+                                        test r,c,t,p,ipt,pk,"",true
                                     end if
                                 next
                             next
@@ -2344,7 +3452,8 @@ class classSqliteOdbcTests
     ' ipt = number of records per transaction
     ' pk = use primary key (true/false)
     ' pg = pipe "|" separated pragma string
-    function test(r,c,t,p,ipt,pk,pg)
+    ' d = delete db after create (true/false)
+    function test(r,c,t,p,ipt,pk,pg,d)
         dim fso: Set fso = CreateObject("Scripting.FileSystemObject") 
         ' set pragma values for SQLite3
         dim pragmaHeader: pragmaHeader = ""
@@ -2367,8 +3476,10 @@ class classSqliteOdbcTests
                 if bVerboseOutput then log "PRAGMA " & aaa & ";"
                 objConn.execute "PRAGMA " & aaa & ";"
             next
+        else
+            log "len(pg)=" & len(pg)
         end if
-
+        
         if bOpenFirstTime then
             log "bit,engine,pk,rows,columns,data_type," & pragmaHeader & "AddNewRate_rps,InsertTime_s,TransactionCount,numTranacions"
             bOpenFirstTime = false
@@ -2387,8 +3498,7 @@ class classSqliteOdbcTests
         dim aHeader
         dim aData
         
-        dim createTable: createTable = _
-            "CREATE TABLE " & sTableName & " ( "
+        dim createTable: createTable = "CREATE TABLE " & sTableName & " ( "
             
         if pk = false then
             aHeader = Array("id")
@@ -2465,7 +3575,7 @@ class classSqliteOdbcTests
         
         closedb
 
-        if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
+        if d then if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
 
     end function
 
@@ -2480,6 +3590,38 @@ class classSqliteOdbcTests
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";"
             case "MEM  ":
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=:memory:;"
+            case "SQL3-crypto"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\crypto.dll;"
+            case "SQL3-LoadExt-Csv"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\csv.dll;"
+            case "SQL3-LoadExt-ExtFun"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\extension-functions.dll;"
+            case "SQL3-checkfreelist"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\checkfreelist.dll;"
+            case "SQL3-ieee754"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\ieee754.dll;"
+            case "SQL3-LoadExt-Regexp"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\regexp.dll;"
+            case "SQL3-series"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\series.dll;"
+            case "SQL3-sha"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\shathree.dll;"
+            case "SQL3-totype"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\totype.dll;"
+            case "SQL3-wholenumber"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\wholenumber.dll;"
+            case "SQL3-uuid"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\uuid.dll;"
+            case "SQL3-vfsstat"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\vfsstat.dll;"
+            case "SQL3-bfsvtab"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\bfsvtab.dll;"
+            case "SQL3-decimal"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\decimal.dll;"
+            case "SQL3-fileio"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\fileio.dll;"
+            case "SQL3-sqlfcmp"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\sqlfcmp.dll;"
         end select
         
         if bVerboseOutput then log p & " " & sConnStr & vbcrlf
