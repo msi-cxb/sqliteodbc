@@ -295,10 +295,6 @@ class classSqliteOdbcTests
             ' JSON to do
             sqlite_json_virtual_columns
             If Err.Number <> 0 Then wscript.quit -1
-        
-            dbSqlite3 = strFolder & "\testDBs\crypto.sqlite3"
-            sqlite_extension_crypto
-            If Err.Number <> 0 Then wscript.quit -1
 
         end if
 
@@ -347,11 +343,14 @@ class classSqliteOdbcTests
 
             sqlite_sqlfcmp_printf_format
             If Err.Number <> 0 Then wscript.quit -1
+        
+            dbSqlite3 = strFolder & "\testDBs\crypto.sqlite3"
+            sqlite_extension_crypto
+            If Err.Number <> 0 Then wscript.quit -1
 
             ' vfsstat doesn't work in ODBC (can't load extension before opening db)
             ' sqlite_extension_vfsstat
             ' If Err.Number <> 0 Then wscript.quit -1
-
 
         end if
 
@@ -1309,7 +1308,8 @@ class classSqliteOdbcTests
   
         opendb "SQL3 "
         log "load_extension(crypto.dll)"
-        query2csv("SELECT load_extension('crypto.dll') as ext_loaded")
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\crypto.dll') as ext_loaded")
+        if aQueryResults(2)(0) <> "Null" then  retValue = retValue + 1
         query2csv("select hex(md5('abc'));")
         retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72"""))
         log retValue & " " & aQueryResults(2)(0)
@@ -1328,7 +1328,7 @@ class classSqliteOdbcTests
         closedb
         log ""
 
-        log "load_extension() via connection string."
+        log "crypto.dll via connection string."
         opendb "SQL3-crypto"
         query2csv("select hex(md5('abc'));")
         retValue = retValue +  strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72""")
