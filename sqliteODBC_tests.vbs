@@ -1,5 +1,110 @@
 option explicit
 
+class classTimer
+    Private fStartTime
+    Private fStopTime
+    Private fCurrentTime
+    Private lCounter
+    
+    '**********************************************************************
+    Private Sub Class_Initialize
+        lCounter = 0
+    end sub
+
+    '**********************************************************************
+    Private Sub Class_Terminate
+    end sub
+
+    '**********************************************************************
+    Public Property Let StartTime(f) 
+        fStartTime = f 
+    End Property
+    
+    Public Property Get StartTime 
+        StartTime = fStartTime 
+    End Property 
+    
+    '**********************************************************************
+    Public Property Let StopTime(f) 
+        fStopTime = f 
+    End Property
+    
+    Public Property Get StopTime 
+        StopTime = fStopTime 
+    End Property 
+    
+    '**********************************************************************
+    Public Property Get CurrentTime
+        fCurrentTime = Timer
+        CurrentTime = fCurrentTime 
+    End Property 
+    
+    '**********************************************************************
+    Public Property Get ElapsedTime
+        fCurrentTime = Timer
+        ElapsedTime = fCurrentTime - fStartTime
+    End Property 
+    
+    '**********************************************************************
+    Public Property Get Counter 
+        Counter = lCounter 
+    End Property 
+    
+    '**********************************************************************
+    public function StartTimer()
+        StartTime = Timer
+        StartTimer = true
+    end function
+    
+    '**********************************************************************
+    public function StopTimer()
+        StopTime = Timer
+        StopTimer = true
+    end function
+    
+    '**********************************************************************
+    public function IncrementCounter()
+        lCounter = lCounter + 1
+        IncrementCounter = lCounter
+    end function
+        
+    '**********************************************************************
+    public function ResultString()
+    
+        dim sString
+        sString = "Timer Results: Total time: " & _
+            Fix((fStopTime - fStartTime)/60) & " min "  & _
+            ((round(fStopTime - fStartTime)) mod 60) & " sec"
+            
+        if lCounter > 0 then
+            sString = sString & " Average time per run: " & _
+                ((round(fStopTime - fStartTime))/lCounter) & " sec"
+        end if
+    
+        ResultString = sString
+        
+    end function
+    
+    '**********************************************************************
+    private Function Pad(strText, nLen, strChar, bFront) 
+        Dim nStartLen 
+        If strChar = "" Then 
+            strChar = "0" 
+        End If 
+        nStartLen = Len(strText) 
+        If Len(strText) >= nLen Then 
+            Pad = strText 
+        Else 
+            If bFront Then 
+                Pad = String(nLen - Len(strText), strChar) & strText 
+            Else 
+                Pad = strText & String(nLen - Len(strText), strChar) 
+            End If 
+        End If 
+    End Function
+    
+end class
+
 ' so that javascript can create new object instance of VBScript class
 public function NewclassSqliteOdbcTests()
     Set NewclassSqliteOdbcTests = new classSqliteOdbcTests
@@ -77,13 +182,12 @@ class classSqliteOdbcTests
     private sAppdataPath
     private bVerboseOutput
     private dbSqlite3
-    private dbAccess
-    private dbDuck
-    private dbDuckDSN
+    private oTimer
     
-
     '*************************************************************************
     sub class_initialize()
+        set oTimer = new classTimer
+
         bOpenFirstTime = true
         bVerboseOutput = false
         
@@ -156,6 +260,7 @@ class classSqliteOdbcTests
     sub class_terminate()
         set objFSO = nothing
         set oWShell = nothing
+        set oTimer = nothing
         log "class_terminate"
     end sub
     
@@ -178,32 +283,35 @@ class classSqliteOdbcTests
         main
         
     end function
-    '********************************************
-    
-    public function main
 
+    '********************************************
+    public function main
         on error resume next
 
         log "****************************************************************************"
         log "main"
         log ""
-        log ""
 
 
         log "dbSqlite3 " & dbSqlite3
 
-        sqlite_version
+        'sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
+        
+        on error goto 0
+        
+        on error resume next
 
+        ' sqlite features
         if true then
             log dumpPragma
             If Err.Number <> 0 Then wscript.quit -1
 
-            insertTests
-            If Err.Number <> 0 Then wscript.quit -1
-
             dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
             sqlite3_BuiltIn_Tests
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_basic_cluster
             If Err.Number <> 0 Then wscript.quit -1
 
             sqlite3_rtree_tests
@@ -248,7 +356,6 @@ class classSqliteOdbcTests
             sqlite_extension_geopoly
             If Err.Number <> 0 Then wscript.quit -1
 
-            ' 3.37, 3.38, 3.39 updates and improvements
             sqlite_right_join
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -292,14 +399,15 @@ class classSqliteOdbcTests
             getTableInfoDetails
             If Err.Number <> 0 Then wscript.quit -1
 
-            ' JSON to do
             sqlite_json_virtual_columns
             If Err.Number <> 0 Then wscript.quit -1
-
+            
+            sqlite_simple_virtual_columns
+            If Err.Number <> 0 Then wscript.quit -1
         end if
 
+        ' extension tests
         if true then
-
             dbSqlite3 = strFolder & "\testDBs\csv.sqlite3"
             sqlite_extension_functions_csv
             If Err.Number <> 0 Then wscript.quit -1
@@ -353,7 +461,15 @@ class classSqliteOdbcTests
             ' If Err.Number <> 0 Then wscript.quit -1
 
         end if
+        
+        ' insert tests
+        if true then
+            insertTests
+            If Err.Number <> 0 Then wscript.quit -1
+        end if
 
+
+        ' can be used to create some test tables
         ' r = number of rows to insert
         ' c = number of columns per row
         ' t = column data type (INTEGER, REAL, TEXT)
@@ -367,6 +483,86 @@ class classSqliteOdbcTests
 
         log "FINISHED!"
         on error goto 0
+    end function
+    
+    '********************************************
+    public function sqlite_basic_cluster
+        ' https://sqlite.org/forum/forumpost/3be3abdbff
+        ' I would like to automatically cluster dates together. 
+        ' If the dates are further than 5 days apart, I'd like them to form a new group.
+        dim q
+        dim retValue: retValue = 0
+        dim result
+        opendb "MEM  "
+        
+        result = query2csv("create temp table some_data(action DATE);")
+        if result = -1 then retValue = retValue + 1
+
+        ' First set
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-01');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-01');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-02');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-04');")
+        if result = -1 then retValue = retValue + 1
+
+        ' second set
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-25');")
+        if result = -1 then retValue = retValue + 1
+        
+        ' third set - note this crosses months
+        result = query2csv("insert into temp.some_data VALUES ('2000-01-31');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-02-01');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-02-01');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-02-01');")
+        if result = -1 then retValue = retValue + 1
+        
+        ' fourth set
+        result = query2csv("insert into temp.some_data VALUES ('2000-02-07');")
+        if result = -1 then retValue = retValue + 1
+
+        ' fifth set
+        result = query2csv("insert into temp.some_data VALUES ('2000-03-01');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-03-02');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-03-02');")
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("insert into temp.some_data VALUES ('2000-03-02');")
+        if result = -1 then retValue = retValue + 1
+        
+        q = _
+            "WITH " &_
+            "    edge_detect as ( " &_
+            "        SELECT action, " &_
+            "            julianday(action)-julianday(lag(action) OVER ()) <= 5 AS ingrp " &_
+            "        FROM some_data " &_
+            "        ORDER BY action " &_
+            "    ), " &_
+            "    build_grouping AS ( " &_
+            "        SELECT action, COUNT(*) FILTER (WHERE ingrp IS NOT 1) " &_
+            "            OVER (ROWS UNBOUNDED PRECEDING) AS g " &_
+            "        FROM edge_detect " &_
+            "    ) " &_
+            "SELECT MIN(action) as Start, MAX(action) AS End " &_
+            "FROM build_grouping " &_
+            "GROUP BY g; "
+        result = query2csv(q)
+        if result <> 5 then retValue = retValue + 1
+        if aQueryResults(1) <> "Start(adVarWChar),End(adVarWChar)" then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """2000-01-01"",""2000-01-04""" then retValue = retValue + 1
+        if aQueryResults(2)(1) <> """2000-01-25"",""2000-01-25""" then retValue = retValue + 1
+        if aQueryResults(2)(2) <> """2000-01-31"",""2000-02-01""" then retValue = retValue + 1
+        if aQueryResults(2)(3) <> """2000-02-07"",""2000-02-07""" then retValue = retValue + 1
+        if aQueryResults(2)(4) <> """2000-03-01"",""2000-03-02""" then retValue = retValue + 1
+        
+        closedb
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
@@ -999,12 +1195,15 @@ class classSqliteOdbcTests
     public function sqlite_extension_functions_sha
         dim s: s = ""
         dim retValue: retValue = 0
+        dim result
 
         opendb "MEM  "
         log "******************************************************"
         log "sqlite_extension_functions_sha"
         log "load_extension() throws error, but sha3 methods are loaded (Function sequence error)"
-        log query("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
+        result = query2csv("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
+        if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
         query2csv("SELECT sha3(1) = sha3('1');")
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
         query2csv("SELECT sha3('hello') = sha3(x'68656c6c6f');")
@@ -1038,6 +1237,46 @@ class classSqliteOdbcTests
         query2csv("WITH a(x) AS (VALUES(NULL)) SELECT sha3_agg(x) = sha3('N') FROM a;")
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
         closedb
+        
+        ' https://sqlite.org/forum/forumpost/23b2e479a0
+        ' recursive CTE to create table with 1 million rows then hash a column with sha3_agg
+        opendb "MEM  "
+        result = query2csv("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
+        if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+        
+        result = query2csv("create table people (id INTEGER, income REAL, tax_rate REAL);")
+        if result = -1 then retValue = retValue + 1
+        
+        dim q: q = _
+            "WITH RECURSIVE person(x) AS ( " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 1000000 " & _
+            ") " & _
+            "INSERT INTO people ( id, income, tax_rate) " & _
+            "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
+        result = query2csv(q)
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("select count(1) from people;")
+        if aQueryResults(2)(0) <> 1000000 then retValue = retValue + 1
+        result = query2csv("select hex(sha3_agg(id)) from people;")
+        if result <> 1 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """6274E2DC85CDEB0A4E355B9FF79CFBCB95995779A4E7DDB90E3D312A7CF46278""" then retValue = retValue + 1
+        
+        log "you could use this to hash the sqlite_schema to prove db has same tables/schema"
+        result = query2csv("CREATE TABLE t0(c0 INTEGER);")
+        if result <> 0 then retValue = retValue + 1
+        result = query2csv("CREATE TABLE t1(c0 INTEGER);")
+        if result <> 0 then retValue = retValue + 1
+        result = query2csv("CREATE TABLE t2(c0, c1 NOT NULL);")
+        if result <> 0 then retValue = retValue + 1
+        result = query2csv("CREATE TABLE t3(c0 INTEGER);")
+        if result <> 0 then retValue = retValue + 1
+        result = query2csv("select * from sqlite_schema;")
+        if result <> 5 then retValue = retValue + 1
+        result = query2csv("select hex(sha3_agg(sql)) from sqlite_schema;")
+        if aQueryResults(2)(0) <> """C915284FCD9F6DE50CDB25B68A42A6EB92089C54CC7F2E5C9BCA1F26007DEA89""" then retValue = retValue + 1
+        closedb
+        
         if retValue > 0 then err.raise retValue
     end function
 
@@ -1354,127 +1593,211 @@ class classSqliteOdbcTests
 
     '********************************************
     public function sqlite_double_quoted_strings
-        opendb "SQL3 "
+        dim retValue: retValue = 0
+        opendb "MEM  "
         log "The SQLITE_DBCONFIG_DQS_DML option activates or deactivates the legacy "
         log "double-quoted string literal misfeature for DML statements only, that is "
         log "DELETE, INSERT, SELECT, and UPDATE statements. The recommended setting is 0, "
         log "meaning that double-quoted strings are disallowed in all contexts. "
         log "However, the default setting is 3 for maximum compatibility with legacy applications."
-        log "ODBC driver setting is 3 for maximum compatibility. Hence both examples below work."
+        log "ODBC driver setting is 3 for maximum compatibility. "
+        log "Hence both examples below work (1 row returned for table t0)."
         log ""
-        logResult query2csv("CREATE TABLE t0(c0 INTEGER);")
-        logResult query2csv("select * from sqlite_master where type=""table"";")
-        logResult query2csv("select * from sqlite_master where type='table';")
+        query2csv("CREATE TABLE t0(c0 INTEGER);")
+        
+        query2csv("select * from sqlite_master where type=""table"";")
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+
+        query2csv("select * from sqlite_master where type='table';")
+        if aQueryResults(2).count <> 1 then retValue = retValue+1
+
         closedb
+        if retValue > 0 then err.raise retValue
     end function
     
     '********************************************
     public function sqlite_strftime
         ' The strftime() SQL function now supports %G, %g, %U, and %V.
         ' New conversion letters on the strftime() SQL function: %e %F %I %k %l %p %P %R %T %u
+        dim retValue: retValue = 0
         opendb "MEM  "
-        logResult query2csv("SELECT strftime('%e -- %F -- %I -- %k -- %l -- %p -- %P -- %R -- %T -- %u -- %G -- %g -- %U -- %V', '2013-10-07T08:23:19.120') as r;")
-        log """ 7 -- 2013-10-07 -- 08 --  8 --  8 -- AM -- am -- 08:23 -- 08:23:19 -- 1 -- 2013 -- 13 -- 40 -- 41"""
+        query2csv("SELECT strftime('%e -- %F -- %I -- %k -- %l -- %p -- %P -- %R -- %T -- %u -- %G -- %g -- %U -- %V', '2013-10-07T08:23:19.120') as r;")
+        if aQueryResults(2)(0) <> """ 7 -- 2013-10-07 -- 08 --  8 --  8 -- AM -- am -- 08:23 -- 08:23:19 -- 1 -- 2013 -- 13 -- 40 -- 41""" then 
+            retValue = retValue+1 
+        end if
         closedb
+        if retValue > 0 then err.raise retValue
     end function
     
     '********************************************
     public function sqlite_json
+        dim retValue: retValue = 0
         opendb "MEM  "
         ' just a couple of examples to show that JSON works...
         
-        ''{"this":"is","a":["test"]}'
-        logResult query2csv("select json(' { ""this"" : ""is"", ""a"": [ ""test"" ] } ')")
+        '{"this":"is","a":["test"]}'
+        query2csv("select json(' { ""this"" : ""is"", ""a"": [ ""test"" ] } ')")
+        if aQueryResults(2)(0) <>  """{""""this"""":""""is"""",""""a"""":[""""test""""]}""" then 
+            retValue = retValue+1 
+        end if
+
         '[1,2,"3",4]'
-        logResult query2csv("select json_array(1,2,'3',4)") 
+        query2csv("select json_array(1,2,'3',4)") 
+        if aQueryResults(2)(0) <>  """[1,2,""""3"""",4]""" then 
+            retValue = retValue+1 
+        end if
+
         '[""[1,2]"]'")
-        logResult query2csv("select json_array('[1,2]')") 
+        query2csv("select json_array('[1,2]')") 
+        if aQueryResults(2)(0) <>  """[""""[1,2]""""]""" then 
+            retValue = retValue+1 
+        end if
+        
         '[[1,2]]'")
-        logResult query2csv("select json_array(json_array(1,2))") 
+        query2csv("select json_array(json_array(1,2))") 
+        if aQueryResults(2)(0) <>  """[[1,2]]""" then 
+            retValue = retValue+1 
+        end if
+        
         '[1,null,"3","[4,5]","{\"six\":7.7}"]'")
-        logResult query2csv("select json_array(1,null,'3','[4,5]','{""six"":7.7}')") 
+        query2csv("select json_array(1,null,'3','[4,5]','{""six"":7.7}')") 
+        if aQueryResults(2)(0) <>  """[1,null,""""3"""",""""[4,5]"""",""""{\""""six\"""":7.7}""""]""" then 
+            retValue = retValue+1 
+        end if
+        
         '[1,null,"3",[4,5],{"six":7.7}]'")
-        logResult query2csv("select json_array(1,null,'3',json('[4,5]'),json('{""six"":7.7}'))") 
+        query2csv("select json_array(1,null,'3',json('[4,5]'),json('{""six"":7.7}'))") 
+        if aQueryResults(2)(0) <>  """[1,null,""""3"""",[4,5],{""""six"""":7.7}]""" then 
+            retValue = retValue+1 
+        end if
+        
         '$.c' → '[4,5,{"f":7}]'
-        logResult query2csv("select '{""a"":2,""c"":[4,5,{""f"":7}]}' -> '$.c'") 
+        query2csv("select '{""a"":2,""c"":[4,5,{""f"":7}]}' -> '$.c'") 
+        if aQueryResults(2)(0) <>  """[4,5,{""""f"""":7}]""" then 
+            retValue = retValue+1 
+        end if
         
         closedb
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
     public function sqlite_json_virtual_columns
         ' https://antonz.org/json-virtual-columns/
+        
+        dim retValue: retValue = 0
         opendb "MEM  "
     
-        ' data
-        dim s
-        log query("create table events(value TEXT);")
-        log "populate table start"
-        dim i
-         query("begin transaction;")
-        for i = 1 to 1000000
-            s = "insert into events (value) values ('{""timestamp"":""2022-05-15T09:31:00Z"",""object"":""user"",""object_id"":" & i & ",""action"":""login"",""details"":{""ip"":""192.168.0.1""}}');"
-            query(s)
-            if i mod 50000 = 0 then
-                log "commit " & i
-                query("commit transaction;")
-                query("begin transaction;")
-            end if
-        next
-         query("commit transaction;")
-        log "populate table done"
+        query2csv("create table events(value TEXT);")
         
-        ' slow
-        s = _
+        ' recursive CTE to create table
+        dim q: q = _
+            "WITH RECURSIVE event(x) AS ( " & _
+            "     SELECT 1 UNION ALL SELECT x+1 FROM event LIMIT 10000000" & _
+            ")" & _
+            "INSERT INTO events ( value ) " & _
+            "SELECT '{""timestamp"":""2022-05-15T09:31:00Z"",""object"":""user' || x || '"",""object_id"":' || x || ',""action"":""login"",""details"":{""ip"":""192.168.0.1""}}' FROM event;"
+
+        oTimer.StartTimer
+        query2csv(q)
+        oTimer.StopTimer
+        query2csv("select count(1) from events;")
+        log "populate table (" & aQueryResults(2)(0) & ") " & oTimer.ResultString
+        
+        ' slow as you're calling json_extract alot for each query
+        q = _
         "select " & _
           "json_extract(value, '$.object') as object, " & _
           "json_extract(value, '$.action') as action, " & _
           "json_extract(value, '$.object_id') as object_id " & _
         "from events " & _
-        "where json_extract(value, '$.object_id') = 800000;"
-        log "slow query start"
-        logResult query2csv(s)
-        log "slow query finish"
+        "where json_extract(value, '$.object_id') = [[[ID]]];"
+        
+        oTimer.StartTimer
+        query2csv( replace(q,"[[[ID]]]","1000000") )
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "slow query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
+
+        oTimer.StartTimer
+        query2csv( replace(q,"[[[ID]]]","5000000") )
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "slow query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
+
+        oTimer.StartTimer
+        query2csv( replace(q,"[[[ID]]]","10000000") )
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "slow query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
 
         
-        ' fast using SQL virtual columns
+        ' pay up front creating virtual columns
+        oTimer.StartTimer
         query "alter table events add column object_id integer as (json_extract(value, '$.object_id'));"
         query "alter table events add column object text as (json_extract(value, '$.object'));"
         query "alter table events add column action text as (json_extract(value, '$.action'));"
         query "create index events_object_id on events(object_id);"
+        oTimer.StopTimer
+        log "index " & oTimer.ResultString
         
-        logResult query2csv("select object, action, object_id from events where object_id = 800000;")
-
+        ' now queries are fast
+        oTimer.StartTimer
+        query2csv("select object, action, object_id from events where object_id = 1000000;")
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "fast query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
+        
+        oTimer.StartTimer
+        query2csv("select object, action, object_id from events where object_id = 5000000;")
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "fast query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
+        
+        oTimer.StartTimer
+        query2csv("select object, action, object_id from events where object_id = 10000000;")
+        oTimer.StopTimer
+        log aQueryResults(2)(0)
+        log "fast query object_id = " & split(aQueryResults(2)(0),",")(2) & " " & oTimer.ResultString
+        
         closedb
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
-    public function sqlite_generated_columns
+    public function sqlite_simple_virtual_columns
         ' https://antonz.org/generated-columns/
         
-        REM id	tax
-        REM 11	15.4
-        REM 12	17.16
-        REM 21	18.48
-        REM 22	21.6
-        REM 23	24.96
-        REM 24	24.96
-        REM 25	28.8
-        REM 31	23.04
-        REM 32	23.04
-        REM 33	24
-
-        REM -- add generated column to the table
-        REM -- (comment this out after the first run)
-        REM alter table people
-        REM add column tax real as (
-        REM income * tax_rate
-        REM );
-
-        REM -- query generated column as the regular one
-        REM select id, round(tax,2) as tax
-        REM from people;
+        on error goto 0
+        dim retValue: retValue = 0
+        dim result
+        opendb "MEM  "
         
+        result = query2csv("create table people (id INTEGER, income REAL, tax_rate REAL);")
+        if result = -1 then retValue = retValue + 1
+        
+        ' recursive CTE to create table
+        dim q: q = _
+            "WITH RECURSIVE person(x) AS ( " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 100000 " & _
+            ") " & _
+            "INSERT INTO people ( id, income, tax_rate) " & _
+            "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
+        result = query2csv(q)
+        if result = -1 then retValue = retValue + 1
+        
+        result = query2csv("select count(1) as numPeople, min(income) as minIncome, max(income) as maxIncome, min(tax_rate) as minTaxRate, max(tax_rate) as maxTaxRate from people;")
+        if split(aQueryResults(2)(0),",")(0) <> 100000 then retValue = retValue + 1
+
+        q = "alter table people add column tax real as ( income * tax_rate );"
+        result = query2csv(q)
+        if result = -1 then retValue = retValue + 1
+        
+        result = query2csv("select id, income, tax_rate, round(tax,2) as tax from people limit 10;")
+        if result <> 10 then retValue = retValue + 1
+
+        closedb
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
@@ -1758,6 +2081,7 @@ class classSqliteOdbcTests
 
     '********************************************
     private function generate_series_rcte(iStart,iEnd,iStep)
+        log "******************************************************"
         dim sRCTE: sRCTE = _
             "WITH RECURSIVE " & _
             "  generate_series(value) AS ( " & _
@@ -3121,22 +3445,49 @@ class classSqliteOdbcTests
         log "****************************************************************************"
         log "sqlite3_feature_tests"
         log "test some other more recent features of sqlite or SQL used by sqlite"
+
+        opendb "MEM  "
+        dim retValue: retValue = 0
+        dim result
         
         log "iif() is now included in SQLite SQL language"
-        opendb "SQL3 "
-        log query("select iif(1=2,'true','false') as w, iif(2=2,'true','false') as x, iif('hello' = 'world','true','false') as y, iif('same' = 'same','true','false') as z;")
-        closedb
+        result = query2csv("select iif(1=2,'true','false') as w, iif(2=2,'true','false') as x, iif('hello' = 'world','true','false') as y, iif('same' = 'same','true','false') as z;")
+        if aQueryResults(2)(0) <> """false"",""true"",""false"",""true""" then retValue = retValue + 1
         
         log "'alter table drop column' is now included in SQLite SQL language"
-        opendb "SQL3 "
-        log query("drop table if exists cxb_copy")
-        log query("create table cxb_copy as select * from test_table")
-        log query("select count(1) from cxb_copy")
-        log query("alter table cxb_copy drop column cxb_text")
-        log query("select * from cxb_copy limit 1")
-        log query("drop table if exists cxb_copy")
-        closedb
+        result = query2csv("create table people (id INTEGER, income REAL, tax_rate REAL);")
+        if result = -1 then retValue = retValue + 1
+        dim q: q = _
+            "WITH RECURSIVE person(x) AS ( " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 1000 " & _
+            ") " & _
+            "INSERT INTO people ( id, income, tax_rate) " & _
+            "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
+        result = query2csv(q)
+        if result = -1 then retValue = retValue + 1
+        result = query2csv("select count(1) from people")
+        if result <> 1 then retValue = retValue + 1
         
+        result = query2csv("drop table if exists people_copy")
+        if result <> 0 then retValue = retValue + 1
+        
+        result = query2csv("create table people_copy as select * from people")
+        if result <> 0 then retValue = retValue + 1
+        
+        result = query2csv("select count(1) from people_copy")
+        if result <> 1 then retValue = retValue + 1
+        
+        result = query2csv("alter table people_copy drop column tax_rate")
+        if result <> 0 then retValue = retValue + 1
+        
+        result = query2csv("select * from people_copy limit 1")
+        if result <> 1 then retValue = retValue + 1
+        
+        result = query2csv("drop table if exists people_copy")
+        if result = -1 then retValue = retValue + 1
+
+        closedb
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
@@ -3782,7 +4133,7 @@ class classSqliteOdbcTests
 
     '********************************************
     function query2csv(s)
-        query2csv = -1
+        query2csv = 0
         aQueryResults(2).removeall
         aQueryResults(3) = ""
         dim rowCount: rowCount = 0
@@ -3861,8 +4212,8 @@ class classSqliteOdbcTests
                                     ss = ss & ff.Value & separator
                             end select
                             if err.number <> 0 then
-                                aQueryResults(3) = aQueryResults(3) & "1:" & err.number & ":" & err.description & "|"
-                                err.clear
+                                aQueryResults(3) = aQueryResults(3) & "1 " & err.number & ":" & err.description & "|"
+                                query2csv = -1
                             end if
                             on error goto 0
                         next
@@ -3870,23 +4221,26 @@ class classSqliteOdbcTests
                         oRs.MoveNext
                         if err.number <> 0 then
                             aQueryResults(3) = aQueryResults(3) & "2 " & err.number & ":" & err.description & "|"
+                            query2csv = -1
                         end if
                         on error goto 0
                         ' remove the last separator 
                         ss = left(ss,len(ss)-1)
                         aQueryResults(2).add rowCount, ss
-                        query2csv = rowCount
                         rowCount = rowCount + 1
+                        query2csv = rowCount
                     loop
                 else
-                    aQueryResults(3) = "RS contains no records" & "|"
+                    'aQueryResults(3) = "RS contains no records" & "|"
                     oRs.close
-                    query2csv = -1
+                    set oRs = nothing
+                    query2csv = 0
                     exit function
                 end if
             else
-                aQueryResults(3) = "RS is not open " & oRs.state & "|"
-                query2csv = -1
+                'aQueryResults(3) = "RS is not open " & oRs.state & "|"
+                query2csv = 0
+                set oRs = nothing
                 exit function
             end if
         end if
@@ -3924,7 +4278,7 @@ class classSqliteOdbcTests
         ' log query2csv() result contained in aQueryResults to console
         if r >= 0 then
             log "QUERY  " & aQueryResults(0)
-            log "return " & (r+1) & " rows"
+            log "returned " & (r) & " rows"
             if len(aQueryResults(3)) > 0  then log aQueryResults(3)
             log aQueryResults(1)
             dim vKey: for each vKey in aQueryResults(2)
@@ -3933,7 +4287,7 @@ class classSqliteOdbcTests
             log ""
         else
             log "QUERY  " & aQueryResults(0)
-            log "return no rows (" & r & ")"
+            log "returned no rows (" & r & ")"
             if len(aQueryResults(3)) > 0  then log aQueryResults(3)
             log ""
         end if
