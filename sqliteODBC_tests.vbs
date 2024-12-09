@@ -298,8 +298,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-        log Err.Number
-        
+
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -3757,7 +3756,6 @@ class classSqliteOdbcTests
         dim temp_store:     temp_store =        Array("MEMORY","FILE")                                          ' FILE
         dim locking_mode:   locking_mode =      Array("EXCLUSIVE","NORMAL")                                     ' NORMAL (default)
         
-        ' these are the best performers
         REM dim mmap_size:      mmap_size =         Array(536870912*4)
         REM dim cache_size:     cache_size =        Array(-2000)
         REM dim journal_mode:   journal_mode =      Array("OFF")
@@ -3792,7 +3790,7 @@ class classSqliteOdbcTests
 
         dim aPrimaryKey: aPrimaryKey = Array(true,false)
         dim types: types = Array("INTEGER","REAL","TEXT")
-        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(10000,25000,50000,100000)
+        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(10000,25000,50000)
         
         dim rtn, rps, max_rps_settings, max_rps
         max_rps_settings = ""
@@ -3833,6 +3831,9 @@ class classSqliteOdbcTests
     ' pg = pipe "|" separated pragma string
     ' d = delete db after create (true/false)
     function test(r,c,t,ipt,pk,pg,d)
+        dim ss: ss = ""
+        dim retValue: retValue = 0
+
         dim fso: Set fso = CreateObject("Scripting.FileSystemObject") 
         ' set pragma values for SQLite3
         dim pragmaHeader: pragmaHeader = ""
@@ -3951,12 +3952,30 @@ class classSqliteOdbcTests
         
         log rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
         
+        query2csv("select myField_1 from test_table where id = " & r)
+        
+        select case t
+            case "INTEGER"
+                 if 1 <> clng(aQueryResults(2)(0)) then
+                    retValue = retValue + 1
+                end if
+           case "REAL"
+                if 1.1 <> cdbl(aQueryResults(2)(0)) then
+                    retValue = retValue + 1
+                end if
+            case "TEXT"
+                if """myField_1""" <> aQueryResults(2)(0) then
+                    retValue = retValue + 1
+                end if
+        end select
+
         closedb
 
         if d then if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
         
         test = rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
 
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
