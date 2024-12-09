@@ -189,7 +189,6 @@ class classSqliteOdbcTests
         set oTimer = new classTimer
 
         bOpenFirstTime = true
-        bVerboseOutput = false
         
         Set objFSO = CreateObject("Scripting.FileSystemObject")
         Set oWShell = CreateObject("WScript.Shell")
@@ -292,18 +291,23 @@ class classSqliteOdbcTests
         log "main"
         log ""
 
+        bVerboseOutput = false
 
         log "dbSqlite3 " & dbSqlite3
 
-        'sqlite_version
+        sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
         
-        on error goto 0
+        dim runTests: runTests = true
         
+        on error goto 0
         on error resume next
 
         ' sqlite features
-        if true then
+        if runTests then
+            longSqlStringReturn
+            If Err.Number <> 0 Then wscript.quit -1
+
             log dumpPragma
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -407,7 +411,7 @@ class classSqliteOdbcTests
         end if
 
         ' extension tests
-        if true then
+        if runTests then
             dbSqlite3 = strFolder & "\testDBs\csv.sqlite3"
             sqlite_extension_functions_csv
             If Err.Number <> 0 Then wscript.quit -1
@@ -463,15 +467,21 @@ class classSqliteOdbcTests
         end if
         
         ' insert tests
-        if true then
+        if runTests then
             insertTests
+            If Err.Number <> 0 Then wscript.quit -1
+        end if
+        
+        ' inventory the testDb folder
+        if runTests then
+            testDbInventory
             If Err.Number <> 0 Then wscript.quit -1
         end if
 
 
         ' can be used to create some test tables
         ' r = number of rows to insert
-        ' c = number of columns per row
+        ' c = number of columns per row (max is 998)
         ' t = column data type (INTEGER, REAL, TEXT)
         ' p = which driver to use (SQL3 or 
         ' ipt = number of records per transaction
@@ -479,7 +489,7 @@ class classSqliteOdbcTests
         ' pg = pipe "|" separated pragma string
         ' function test(r,c,t,p,ipt,pk,pg)
         ' test 100,10,"INTEGER","SQL3 ",100,true,"journal=OFF",true
-        ' test 100,10,"TEXT","SQL3 ",100,true,"journal=OFF",true
+        ' test 10,1000,"TEXT","SQL3 ",100,true,"journal=OFF",false
 
         log "FINISHED!"
         on error goto 0
@@ -2191,50 +2201,68 @@ class classSqliteOdbcTests
     
     '********************************************
     public function longSqlStringReturn
-        ' inspired by https://til.simonwillison.net/sqlite/column-combinations
-        log "******************************************************"
-        log "longSqlString"
-        log ""
-        log "This reads in a query from a file...the cool part of this SQL is that"
-        log "it generates SQL that can then itself be executed. This can be handy"
-        log "if you, say, want to get some kind of info about tables in your database."
-        log "SQLite open this up as it has some function that allow the query to do"
-        log "a little introspection of the DB itself. This would work great, except that"
-        log "ADO defaults columns with strings to 255 characters by default. "
-        log ""
-        log "File longStringTest.sql contains a query that identifies patterns in DB rows in terms"
-        log "of which columns are not null. (see link in code for more details)."
-        log ""
+        REM log "******************************************************"
+        REM log "longSqlString"
+        REM log ""
+        REM log "inspired by https://til.simonwillison.net/sqlite/column-combinations"
+        REM log "This reads in a query from a file...the cool part of this SQL is that"
+        REM log "it generates SQL that can then itself be executed. This can be handy"
+        REM log "if you, say, want to get some kind of info about tables in your database."
+        REM log "SQLite open this up as it has some function that allow the query to do"
+        REM log "a little introspection of the DB itself. This would work great, except that"
+        REM log "ADO defaults columns with strings to 255 characters by default. "
+        REM log ""
+        REM log "File longStringTest.sql contains a query that identifies patterns in DB rows in terms"
+        REM log "of which columns are not null. (see link above for more details)."
+        REM log ""
         dim sFileName: sFileName = ".\sql\longStringTest.sql"
         dim oFile: Set oFile = objFSO.OpenTextFile(sFileName)
         dim sFileContentsTemplate: sFileContentsTemplate = oFile.ReadAll
         oFile.close
         dim sSql,r
-        sSql = replace(sFileContentsTemplate,"___TABLENAME___","pcap")
         set oFile = nothing
         log ""
-        dbSqlite3 = ".\testDBs\icmp.sqlite3"
+        
+        test 10,100,"TEXT","SQL3 ",100,true,"journal=OFF",false
+        dbSqlite3 = ".\testDBs\SQL3_True_10_100_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
-        log "processing " & sFileName & " for table 'pcap'"
+        log query("update test_table set myField_1 = NULL where id <= 5")
+        sSql = replace(sFileContentsTemplate,"_T_","test_table")
+        log "processing " & sFileName & " for table 'test_table' in " & dbSqlite3
         r = query(sSql)
-        log r
+        log len(r) & "-->" & r
+        
         log ""
         log "The problem is that the returned result is truncated to 255 char. The full"
-        log "result is over 1000 char long. Lets try for a table with less columns."
+        log "sql query string is over 1000 char long. Lets try for a table with 2 columns."
         log ""
-        sSql = replace(sFileContentsTemplate,"___TABLENAME___","meta")
-        log "processing " & sFileName & " for table 'meta'"
+        
+        test 10,1,"TEXT","SQL3 ",100,true,"journal=OFF",false
+        dbSqlite3 = ".\testDBs\SQL3_True_10_1_100_T_OFF_64.sqlite3"
+        opendb "SQL3 "
+        log query("update [test_table] set myField_1 = null where id <= 5")
+        sSql = replace(sFileContentsTemplate,"_T_","test_table")
+        log "processing " & sFileName & " for table 'test_table' in " & dbSqlite3
         r = query(sSql)
-        log r
-        log "OK the resulting query is approx 230 char so less than 255 char limit. Now execute the resulting SQL"
+        log len(r) & "-->" & r
+        
+        log "OK the resulting query is approx 244 char so less than 255 char limit. "
+        log "Use split to grab SQL and execute"
         r = split(r,":")(2)
-        log query(r)
+        logResult query2csv(r)
+        
         log ""
-        log "OK yeah not very exciting but that is only because the table has 2 non-null columns and one record."
-        log "Yes there are other ways to do this... Issue I'm illustrating here is ADO default of 255 chars for strings "
+        log "Expected result:"
+        log "returned 2 rows"
+        log "columns(adVarWChar),num_rows(adInteger)"
+        log """id, myField_1, "",5            <--- 5 records where both columns are not NULL"
+        log """id, "",5                       <--- 5 records where only id is not NULL"
+        
+        log ""
+        log "Issue I'm illustrating here is ADO default of 255 chars for strings "
         log "unless they are defined in a create table statement."
         log ""
-        log "By the way, this will work in C# and other non ADO places."
+        log "By the way, this will work fine in C# and other non-ADO places."
         log ""
         closedb
         
@@ -2248,14 +2276,14 @@ class classSqliteOdbcTests
             ")" _
         )
         sSql = "INSERT INTO t ( len, str ) VALUES "
-        dim i,j: for i = 0 to 310
+        dim i,j: for i = 0 to 303
             j = j & (i mod 10)
-            if i >= 290 then sSql = sSql & "(" & i & ",'" & j & "'),"
+            if i >= 294 then sSql = sSql & "(" & i+1 & ",'" & j & "'),"
         next
         sSql = left(sSql,len(sSql)-1) ' remove the last comma
-        log query(sSql)
+        query(sSql)
         logResult query2csv("select * from t;")
-        log "scroll to right and see how returned string is truncated at 300"
+        log "scroll to right and see how returned string is truncated at length = 300 "
         closedb
         
     end function
@@ -2546,16 +2574,19 @@ class classSqliteOdbcTests
 
     '********************************************
     public function testDbInventory
+        ' loop through a folder of sqlite database files 
         dim sPath: sPath = objFSO.GetAbsolutePathName(".\testDBs")
         dim oFolder: set oFolder = objFSO.GetFolder(sPath)
         log "path: " & oFolder.path & vbcrlf
         log "files:"
         dim oFile: for each oFile in oFolder.Files
-            dbSqlite3 = oFile.path
-            log dbSqlite3
-            opendb "SQL3 "
-            log query(" select name from sqlite_master where type = 'table';")
-            closedb
+            if objFSO.GetExtensionName(oFile.Path) = "sqlite3" then
+                dbSqlite3 = oFile.path
+                log dbSqlite3
+                opendb "SQL3 "
+                log query(" select name from sqlite_master where type = 'table';")
+                closedb
+            end if
         next
         log ""
     end function
@@ -3714,29 +3745,32 @@ class classSqliteOdbcTests
     ' given different settings
     public function insertTests()
         
+        REM mmap_size = SQLite has the option of accessing disk content directly using memory-mapped I/O 
         REM journal_mode = DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
         REM page_size = Query or set the page size of the database. The page size must be a power of two between 512 and 65536 inclusive.
         REM synchronous = 0 | OFF | 1 | NORMAL | 2 | FULL | 3 | EXTRA;
         REM temp_store = 0 | DEFAULT | 1 | FILE | 2 | MEMORY;
         REM locking_mode = NORMAL | EXCLUSIVE
 
-        REM dim cache_size:     cache_size =        Array(-2000,-4000,-8000)                                        ' -2000 (default)
-        REM dim journal_mode:   journal_mode =      Array("WAL","MEMORY","OFF","DELETE","TRUNCATE","PERSIST")       ' OFF, WAL (DELETE default)
-        REM dim page_size:      page_size =         Array(4096,4096*2,4096*4,4096*8)                                ' 4096 (default)
-        REM dim synchronous:    synchronous =       Array("OFF","NORMAL","FULL","EXTRA")                            ' NORMAL (default)
-        REM dim temp_store:     temp_store =        Array("MEMORY","FILE")                                          ' FILE
-        REM dim locking_mode:   locking_mode =      Array("EXCLUSIVE","NORMAL")                                     ' NORMAL (default)
+        dim mmap_size:      mmap_size =         Array(0,536870912*2,536870912*4)                                ' off, 0.5GB, 1 GB, 2 GB, 4 GB 
+        dim cache_size:     cache_size =        Array(-2000,-4000,-8000,-16000)                                 ' -2000 (default)
+        dim journal_mode:   journal_mode =      Array("WAL","MEMORY","OFF","DELETE","TRUNCATE","PERSIST")       ' OFF, WAL (DELETE default)
+        dim page_size:      page_size =         Array(4096,4096*2,4096*4,4096*8)                                ' 4096 (default)
+        dim synchronous:    synchronous =       Array("OFF","NORMAL","FULL","EXTRA")                            ' NORMAL (default)
+        dim temp_store:     temp_store =        Array("MEMORY","FILE")                                          ' FILE
+        dim locking_mode:   locking_mode =      Array("EXCLUSIVE","NORMAL")                                     ' NORMAL (default)
         
         ' these are the best performers
-        dim cache_size:     cache_size =        Array(-2000)
-        dim journal_mode:   journal_mode =      Array("WAL","OFF")
-        dim page_size:      page_size =         Array(4096)
-        dim synchronous:    synchronous =       Array("NORMAL")
-        dim temp_store:     temp_store =        Array("FILE")
-        dim locking_mode:   locking_mode =      Array("NORMAL")
+        REM dim mmap_size:      mmap_size =         Array(536870912*4)
+        REM dim cache_size:     cache_size =        Array(-2000)
+        REM dim journal_mode:   journal_mode =      Array("OFF")
+        REM dim page_size:      page_size =         Array(4096)
+        REM dim synchronous:    synchronous =       Array("NORMAL")
+        REM dim temp_store:     temp_store =        Array("FILE")
+        REM dim locking_mode:   locking_mode =      Array("NORMAL")
 
         dim apg: apg = Array()
-        dim cs,jm,ps,s,ts,lm
+        dim cs,jm,ps,s,ts,lm,mm
         
         for each ts in temp_store
             for each ps in page_size
@@ -3744,8 +3778,10 @@ class classSqliteOdbcTests
                     for each lm in locking_mode
                         for each jm in journal_mode
                             for each cs in cache_size
-                                redim preserve apg(ubound(apg)+1)
-                                apg(ubound(apg)) = "cache_size="&cs&"|journal_mode="&jm&"|page_size="&ps&"|synchronous="&s&"|temp_store="&ts&"|locking_mode="&lm
+                                for each mm in mmap_size
+                                    redim preserve apg(ubound(apg)+1)
+                                    apg(ubound(apg)) = "mmap_size="&mm&"|cache_size="&cs&"|journal_mode="&jm&"|page_size="&ps&"|synchronous="&s&"|temp_store="&ts&"|locking_mode="&lm
+                                next
                             next
                         next
                     next
@@ -3753,58 +3789,53 @@ class classSqliteOdbcTests
             next
         next
         
-        dim aPrimaryKey ' set below in loop
-        
+        REM dim aPrimaryKey: aPrimaryKey = Array(true)
+        REM dim types: types = Array("TEXT")
         REM dim aInsertsPerTransaction: aInsertsPerTransaction = Array(50000)
-        REM dim aInsertsPerTransaction: aInsertsPerTransaction = Array(50000,100000)
-        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(5000,10000,25000,50000,100000)
-        
-        dim aDbTypes: aDbTypes = Array("SQL3 ")
-        
+
+        dim aPrimaryKey: aPrimaryKey = Array(true,false)
         dim types: types = Array("INTEGER","REAL","TEXT")
-        REM dim types: types = Array("INTEGER","TEXT")
-        REM dim types: types = Array("INTEGER")
+        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(10000,25000,50000,100000)
         
-        if true then
-            dim t: for each t in types
-                dim r: for r = 100000 to 100000 step 100000
-                    dim c: for c = 5 to 5 step 100
-                        dim p: for each p in aDbTypes
-                            if instr(p,"SQL") > 0 then 
-                                aPrimaryKey = Array(true,false)
-                            else
-                                aPrimaryKey = Array(false)
-                            end if
-                            dim pk: for each pk in aPrimaryKey
-                                dim ipt: for each ipt in aInsertsPerTransaction
-                                    if instr(p,"SQL") > 0 then 
-                                        dim pg: for each pg in apg
-                                            REM log r & " " & c & " " & t & " " & p & " " & ipt & " " & pk
-                                            test r,c,t,p,ipt,pk,pg,true
-                                        next
-                                    else
-                                        REM log r & " " & c & " " & t & " " & p & " " & ipt & " " & pk
-                                        test r,c,t,p,ipt,pk,"",true
-                                    end if
-                                next
+        dim rtn, rps, max_rps_settings, max_rps
+        max_rps_settings = ""
+        max_rps = 0
+        
+        dim t: for each t in types
+            REM dim r: for r = 100000 to 100000 step 100000
+            dim r: r = 100000
+                REM dim c: for c = 25 to 25 step 100
+                dim c: c = 25
+                    dim pk: for each pk in aPrimaryKey
+                        dim ipt: for each ipt in aInsertsPerTransaction
+                            dim pg: for each pg in apg
+                                rtn = test(r,c,t,ipt,pk,pg,true)
+                                rps = split(rtn,",")(0)
+                                if rps > max_rps then 
+                                    max_rps = rps
+                                    max_rps_settings = rtn
+                                end if
                             next
                         next
                     next
-                next
-            next
-        end if
+                REM next
+            REM next
+        next
+        
+        log vbcrlf & vbcrlf & "max_rps for "&r&"x"&c&" is " & max_rps_settings & vbcrlf
+        
     end function
 
     '********************************************
     ' r = number of rows to insert
     ' c = number of columns per row
     ' t = column data type (INTEGER, REAL, TEXT)
-    ' p = which driver to use (SQL3 or 
+    ' mm = memmap size
     ' ipt = number of records per transaction
     ' pk = use primary key (true/false)
     ' pg = pipe "|" separated pragma string
     ' d = delete db after create (true/false)
-    function test(r,c,t,p,ipt,pk,pg,d)
+    function test(r,c,t,ipt,pk,pg,d)
         dim fso: Set fso = CreateObject("Scripting.FileSystemObject") 
         ' set pragma values for SQLite3
         dim pragmaHeader: pragmaHeader = ""
@@ -3820,9 +3851,9 @@ class classSqliteOdbcTests
             if Not(objFSO.FolderExists(strFolder & "\testDBs")) then
                 objFSO.CreateFolder(strFolder & "\testDBs")
             end if 
-            dbSqlite3 = strFolder & "\testDBs\" & trim(p) & "_" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs\" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
             if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
-            opendb p
+            opendb "SQL3 "
             for each aaa in aa
                 if bVerboseOutput then log "PRAGMA " & aaa & ";"
                 objConn.execute "PRAGMA " & aaa & ";"
@@ -3836,6 +3867,7 @@ class classSqliteOdbcTests
             bOpenFirstTime = false
         end if
 
+        ' I'm not sure where this limit is coming from but it is there
         if c > 998 then c = 998
         
         dim sPk
@@ -3891,7 +3923,7 @@ class classSqliteOdbcTests
         
         openRecordSet("select * from [" & sTableName & "]")
             
-        dim iRecords: iRecords = r+1
+        dim iRecords: iRecords = r
         dim iTransactionCount: iTransactionCount = 0
         dim sHeader: sHeader = join(aHeader,",")
         dim sData
@@ -3916,17 +3948,17 @@ class classSqliteOdbcTests
         objConn.CommitTrans
         iTransactionCount = iTransactionCount + 1
         
-        dim result: result = 0
-        on error resume next
-        objRs.movelast
-        result = (timer - dStart)
-        on error goto 0
+        dim time: time = (timer - dStart)
+        if time = 0 then time = 0.001
+        dim rps: rps = (r/cdbl(time))
         
-        log iBitness & "," & p & "," & pk & "," & r & "," & c & "," & t & "," & pragma & (r/cdbl(result)) & "," & result & "," & ipt & "," & iTransactionCount
+        log rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
         
         closedb
 
         if d then if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
+        
+        test = rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
 
     end function
 

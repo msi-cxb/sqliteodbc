@@ -2,6 +2,7 @@
 REM force unicode support
 REM mode con codepage select=65001
 setlocal
+cls
 
 setlocal EnableDelayedExpansion
 set "arg1="
