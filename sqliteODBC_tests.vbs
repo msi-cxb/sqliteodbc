@@ -292,17 +292,14 @@ class classSqliteOdbcTests
         log ""
 
         bVerboseOutput = false
+        dim runTests: runTests = true
 
-        log "dbSqlite3 " & dbSqlite3
+        log "dbSqlite3 [" & dbSqlite3 & "]"
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
+        log Err.Number
         
-        dim runTests: runTests = true
-        
-        on error goto 0
-        on error resume next
-
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -494,7 +491,19 @@ class classSqliteOdbcTests
         log "FINISHED!"
         on error goto 0
     end function
-    
+
+    '********************************************
+    public function sqlite_version
+        dim oShell: Set oShell = WScript.CreateObject("WScript.Shell")
+        dim proc_arch: proc_arch = oShell.ExpandEnvironmentStrings("%PROCESSOR_ARCHITECTURE%")
+        set oShell = nothing
+        log "****************************************************************************"
+        log "sqlite_version arch = " & proc_arch
+        opendb "MEM  "
+        log query("SELECT sqlite_version() as vers, sqlite_source_id() as srcId;")
+        closedb
+    end function
+
     '********************************************
     public function sqlite_basic_cluster
         ' https://sqlite.org/forum/forumpost/3be3abdbff
@@ -2223,7 +2232,7 @@ class classSqliteOdbcTests
         set oFile = nothing
         log ""
         
-        test 10,100,"TEXT","SQL3 ",100,true,"journal=OFF",false
+        test 10,100,"TEXT",100,true,"journal=OFF",false
         dbSqlite3 = ".\testDBs\SQL3_True_10_100_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update test_table set myField_1 = NULL where id <= 5")
@@ -2237,7 +2246,7 @@ class classSqliteOdbcTests
         log "sql query string is over 1000 char long. Lets try for a table with 2 columns."
         log ""
         
-        test 10,1,"TEXT","SQL3 ",100,true,"journal=OFF",false
+        test 10,1,"TEXT",100,true,"journal=OFF",false
         dbSqlite3 = ".\testDBs\SQL3_True_10_1_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update [test_table] set myField_1 = null where id <= 5")
@@ -3202,18 +3211,6 @@ class classSqliteOdbcTests
         if bOutput then log ""
     end function
     
-    '********************************************
-    public function sqlite_version
-        dim oShell: Set oShell = WScript.CreateObject("WScript.Shell")
-        dim proc_arch: proc_arch = oShell.ExpandEnvironmentStrings("%PROCESSOR_ARCHITECTURE%")
-        set oShell = nothing
-        log "****************************************************************************"
-        log "sqlite_version arch = " & proc_arch
-        opendb "MEM  "
-        log query("SELECT sqlite_version() as vers, sqlite_source_id() as srcId;")
-        closedb
-    end function
-
     '********************************************
     public function sqlite3_page_size_tests
         log "****************************************************************************"
