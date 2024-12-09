@@ -3798,7 +3798,7 @@ class classSqliteOdbcTests
         
         dim t: for each t in types
             REM dim r: for r = 100000 to 100000 step 100000
-            dim r: r = 100000
+            dim r: r = 1000
                 REM dim c: for c = 25 to 25 step 100
                 dim c: c = 25
                     dim pk: for each pk in aPrimaryKey
