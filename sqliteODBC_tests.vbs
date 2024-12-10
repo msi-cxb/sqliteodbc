@@ -468,12 +468,12 @@ class classSqliteOdbcTests
             If Err.Number <> 0 Then wscript.quit -1
         end if
         
-        ' inventory the testDb folder
+        ' inventory the testDb folder then clean up
         if runTests then
             testDbInventory
             If Err.Number <> 0 Then wscript.quit -1
+            if objFSO.FolderExists(strFolder & "\testDBs") then objFSO.DeleteFolder(strFolder & "\testDBs")
         end if
-
 
         ' can be used to create some test tables
         ' r = number of rows to insert
@@ -484,8 +484,8 @@ class classSqliteOdbcTests
         ' pk = use primary key (true/false)
         ' pg = pipe "|" separated pragma string
         ' function test(r,c,t,p,ipt,pk,pg)
-        ' test 100,10,"INTEGER","SQL3 ",100,true,"journal=OFF",true
-        ' test 10,1000,"TEXT","SQL3 ",100,true,"journal=OFF",false
+        ' test 100,10,"INTEGER","SQL3 ",100,true,"journal=OFF",true,false
+        ' test 10,1000,"TEXT","SQL3 ",100,true,"journal=OFF",false,false
 
         log "FINISHED!"
         on error goto 0
@@ -2231,7 +2231,7 @@ class classSqliteOdbcTests
         set oFile = nothing
         log ""
         
-        test 10,100,"TEXT",100,true,"journal=OFF",false
+        test 10,100,"TEXT",100,true,"journal=OFF",false,false
         dbSqlite3 = ".\testDBs\SQL3_True_10_100_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update test_table set myField_1 = NULL where id <= 5")
@@ -2245,7 +2245,7 @@ class classSqliteOdbcTests
         log "sql query string is over 1000 char long. Lets try for a table with 2 columns."
         log ""
         
-        test 10,1,"TEXT",100,true,"journal=OFF",false
+        test 10,1,"TEXT",100,true,"journal=OFF",false,false
         dbSqlite3 = ".\testDBs\SQL3_True_10_1_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update [test_table] set myField_1 = null where id <= 5")
@@ -3737,8 +3737,7 @@ class classSqliteOdbcTests
     end function
 
     '********************************************
-    ' perform an array of tests to evaluate insert performance 
-    ' given different settings
+    ' verify that various options all work for insert and select
     public function insertTests()
         
         REM mmap_size = SQLite has the option of accessing disk content directly using memory-mapped I/O 
@@ -3748,22 +3747,22 @@ class classSqliteOdbcTests
         REM temp_store = 0 | DEFAULT | 1 | FILE | 2 | MEMORY;
         REM locking_mode = NORMAL | EXCLUSIVE
 
-        dim mmap_size:      mmap_size =         Array(0,536870912*2,536870912*4)                                ' off, 0.5GB, 1 GB, 2 GB, 4 GB 
-        dim cache_size:     cache_size =        Array(-2000,-4000,-8000,-16000)                                 ' -2000 (default)
+        dim mmap_size:      mmap_size =         Array(0,1073741824,1073741824*2)                                ' off, 1 GB, 2 GB
+        dim cache_size:     cache_size =        Array(-2000,-4000)                                              ' -2000 (default)
         dim journal_mode:   journal_mode =      Array("WAL","MEMORY","OFF","DELETE","TRUNCATE","PERSIST")       ' OFF, WAL (DELETE default)
-        dim page_size:      page_size =         Array(4096,4096*2,4096*4,4096*8)                                ' 4096 (default)
+        dim page_size:      page_size =         Array(4096,4096*4)                                              ' 4096 (default)
         dim synchronous:    synchronous =       Array("OFF","NORMAL","FULL","EXTRA")                            ' NORMAL (default)
         dim temp_store:     temp_store =        Array("MEMORY","FILE")                                          ' FILE
         dim locking_mode:   locking_mode =      Array("EXCLUSIVE","NORMAL")                                     ' NORMAL (default)
         
-        REM dim mmap_size:      mmap_size =         Array(536870912*4)
+        REM dim mmap_size:      mmap_size =         Array(0)
         REM dim cache_size:     cache_size =        Array(-2000)
-        REM dim journal_mode:   journal_mode =      Array("OFF")
-        REM dim page_size:      page_size =         Array(4096)
+        REM dim journal_mode:   journal_mode =      Array("TRUNCATE")
+        REM dim page_size:      page_size =         Array(4096*2)
         REM dim synchronous:    synchronous =       Array("NORMAL")
         REM dim temp_store:     temp_store =        Array("FILE")
         REM dim locking_mode:   locking_mode =      Array("NORMAL")
-
+        
         dim apg: apg = Array()
         dim cs,jm,ps,s,ts,lm,mm
         
@@ -3784,37 +3783,36 @@ class classSqliteOdbcTests
             next
         next
         
-        REM dim aPrimaryKey: aPrimaryKey = Array(true)
-        REM dim types: types = Array("TEXT")
-        REM dim aInsertsPerTransaction: aInsertsPerTransaction = Array(50000)
-
-        dim aPrimaryKey: aPrimaryKey = Array(true,false)
+        REM fixed rows and columns so transactions not important here
         dim types: types = Array("INTEGER","REAL","TEXT")
-        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(10000,25000,50000)
+        dim aInsertsPerTransaction: aInsertsPerTransaction = Array(1000)
+        dim aPrimaryKey: aPrimaryKey = Array(true,false)
         
         dim rtn, rps, max_rps_settings, max_rps
         max_rps_settings = ""
         max_rps = 0
         
+        dim count: count = 0
+        dim r: r = 100
+        dim c: c = 25
+        
+        log "insertTests"
+        
         dim t: for each t in types
-            REM dim r: for r = 100000 to 100000 step 100000
-            dim r: r = 1000
-                REM dim c: for c = 25 to 25 step 100
-                dim c: c = 25
-                    dim pk: for each pk in aPrimaryKey
-                        dim ipt: for each ipt in aInsertsPerTransaction
-                            dim pg: for each pg in apg
-                                rtn = test(r,c,t,ipt,pk,pg,true)
-                                rps = split(rtn,",")(0)
-                                if rps > max_rps then 
-                                    max_rps = rps
-                                    max_rps_settings = rtn
-                                end if
-                            next
-                        next
+            dim ipt: for each ipt in aInsertsPerTransaction
+                dim pk: for each pk in aPrimaryKey
+                    dim pg: for each pg in apg
+                        rtn = test(r,c,t,ipt,pk,pg,true,false)
+                        count = count + 1
+                        log Right("       " & cstr(count), 7) & "," & rtn
+                        rps = split(rtn,",")(0)
+                        if rps > max_rps then 
+                            max_rps = rps
+                            max_rps_settings = rtn
+                        end if
                     next
-                REM next
-            REM next
+                next
+            next
         next
         
         log vbcrlf & vbcrlf & "max_rps for "&r&"x"&c&" is " & max_rps_settings & vbcrlf
@@ -3825,20 +3823,17 @@ class classSqliteOdbcTests
     ' r = number of rows to insert
     ' c = number of columns per row
     ' t = column data type (INTEGER, REAL, TEXT)
-    ' mm = memmap size
     ' ipt = number of records per transaction
     ' pk = use primary key (true/false)
     ' pg = pipe "|" separated pragma string
     ' d = delete db after create (true/false)
-    function test(r,c,t,ipt,pk,pg,d)
+    ' s = simulate only (don't create db)
+    function test(r,c,t,ipt,pk,pg,d,s)
         dim ss: ss = ""
         dim retValue: retValue = 0
-
-        dim fso: Set fso = CreateObject("Scripting.FileSystemObject") 
-        ' set pragma values for SQLite3
         dim pragmaHeader: pragmaHeader = ""
         dim pragma: pragma = ""
-
+        
         if len(pg) > 0 then
             dim aa: aa = split(pg,"|")
             dim aaa
@@ -3846,9 +3841,19 @@ class classSqliteOdbcTests
                 pragmaHeader = pragmaHeader & split(aaa,"=")(0) & ","
                 pragma = pragma & split(aaa,"=")(1) & ","
             next
+        end if
+        
+        if bOpenFirstTime then
+            log "run,bit,engine,pk,rows,columns,data_type," & pragmaHeader & "AddNewRate_rps,InsertTime_s,TransactionCount,numTranacions"
+            bOpenFirstTime = false
+        end if
+
+        if s = false then
+        
             if Not(objFSO.FolderExists(strFolder & "\testDBs")) then
                 objFSO.CreateFolder(strFolder & "\testDBs")
             end if 
+        
             dbSqlite3 = strFolder & "\testDBs\" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
             if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
             opendb "SQL3 "
@@ -3856,122 +3861,117 @@ class classSqliteOdbcTests
                 if bVerboseOutput then log "PRAGMA " & aaa & ";"
                 objConn.execute "PRAGMA " & aaa & ";"
             next
-        else
-            log "len(pg)=" & len(pg)
-        end if
         
-        if bOpenFirstTime then
-            log "bit,engine,pk,rows,columns,data_type," & pragmaHeader & "AddNewRate_rps,InsertTime_s,TransactionCount,numTranacions"
-            bOpenFirstTime = false
-        end if
-
-        ' I'm not sure where this limit is coming from but it is there
-        if c > 998 then c = 998
-        
-        dim sPk
-        if pk = true then sPk = "pk_"
-        
-        dim sTableName: sTableName = "test_table"
-        on error resume next
-        REM objConn.execute "drop table [" & sTableName & "]"
-        on error goto 0
-
-        dim aHeader
-        dim aData
-        
-        dim createTable: createTable = "CREATE TABLE " & sTableName & " ( "
+            ' I'm not sure where this limit is coming from but it is there
+            if c > 998 then c = 998
             
-        if pk = false then
-            aHeader = Array("id")
-            aData = Array(-1)
-            createTable = createTable & _
-            "    id     INTEGER"
-        else
-            aHeader = Array("id")
-            aData = Array(-1)
-            createTable = createTable & _
-            "    id     INTEGER PRIMARY KEY"
-        end if
+            dim sPk
+            if pk = true then sPk = "pk_"
+            
+            dim sTableName: sTableName = "test_table"
+
+            dim aHeader
+            dim aData
+            
+            dim createTable: createTable = "CREATE TABLE " & sTableName & " ( "
+                
+            if pk = false then
+                aHeader = Array("id")
+                aData = Array(-1)
+                createTable = createTable & _
+                "    id     INTEGER"
+            else
+                aHeader = Array("id")
+                aData = Array(-1)
+                createTable = createTable & _
+                "    id     INTEGER PRIMARY KEY"
+            end if
+            
+            if c > 0 then createTable = createTable & ","
+            
+            dim i: for i = 1 to c
+                createTable = createTable & "    myField_" & i & " " & t
+                if i < c then createTable = createTable & ","
+                redim preserve aHeader(ubound(aHeader)+1)
+                aHeader(ubound(aHeader)) = "myField_" & i
+                redim preserve aData(ubound(aData)+1)
+                select case t
+                    case "INTEGER"
+                        aData(ubound(aData)) =  clng(i)
+                    case "REAL"
+                        aData(ubound(aData)) = cdbl(i+0.1)
+                    case "TEXT"
+                        aData(ubound(aData)) = "myField_" & i
+                end select
+            next
+            
+            createTable = createTable & ")"
+
+            dim time: time = 0
+            dim rps: rps = 0
+
+            if typename(objConn) = "Empty" then 
+                log "connection object is Empty"
+                exit function
+            end if
+            objConn.execute createTable
         
-        if c > 0 then createTable = createTable & ","
+            openRecordSet("select * from [" & sTableName & "]")
+                
+            dim iRecords: iRecords = r
+            dim iTransactionCount: iTransactionCount = 0
+            dim sHeader: sHeader = join(aHeader,",")
+            dim sData
+            dim dStart: dStart = timer
+            objConn.BeginTrans
+            for i = 1 to iRecords
+                aData(0)= clng(i)
+                
+                ' AddNew is the way to go for quick inserts from scripts
+                objRs.AddNew aHeader, aData
+                
+                ' insert into using objConn does not perform...at all.
+                ' sData = join(aData,",")
+                ' objConn.execute "insert into [" & sTableName & "] (" & sHeader & ") values(" & sData & ");"
+                
+                if i mod ipt = 0 then
+                    objConn.CommitTrans
+                    iTransactionCount = iTransactionCount + 1
+                    objConn.BeginTrans
+                end if
+            next
+            objConn.CommitTrans
+            iTransactionCount = iTransactionCount + 1
         
-        dim i: for i = 1 to c
-            createTable = createTable & "    myField_" & i & " " & t
-            if i < c then createTable = createTable & ","
-            redim preserve aHeader(ubound(aHeader)+1)
-            aHeader(ubound(aHeader)) = "myField_" & i
-            redim preserve aData(ubound(aData)+1)
+            time = (timer - dStart)
+            if time = 0 then time = 0.001
+            rps = (r/cdbl(time))
+                
+            REM read back the last inserted record to verify table was inserted
+            query2csv("select myField_1 from test_table where id = " & r)
             select case t
                 case "INTEGER"
-                    aData(ubound(aData)) =  clng(i)
-                case "REAL"
-                    aData(ubound(aData)) = cdbl(i+0.1)
+                     if 1 <> clng(aQueryResults(2)(0)) then
+                        retValue = retValue + 1
+                    end if
+               case "REAL"
+                    if 1.1 <> round(cdbl(aQueryResults(2)(0)),1) then
+                        retValue = retValue + 1
+                    end if
                 case "TEXT"
-                    aData(ubound(aData)) = "myField_" & i
+                    if """myField_1""" <> aQueryResults(2)(0) then
+                        retValue = retValue + 1
+                    end if
             end select
-        next
-        
-        createTable = createTable & ")"
+            
+            closedb
 
-        if typename(objConn) = "Empty" then 
-            log "connection object is Empty"
-            exit function
-        end if
-        objConn.execute createTable
-        
-        openRecordSet("select * from [" & sTableName & "]")
-            
-        dim iRecords: iRecords = r
-        dim iTransactionCount: iTransactionCount = 0
-        dim sHeader: sHeader = join(aHeader,",")
-        dim sData
-        dim dStart: dStart = timer
-        objConn.BeginTrans
-        for i = 1 to iRecords
-            REM if pk = false then aData(0)= clng(i)
-            aData(0)= clng(i)
-            
-            ' AddNew is the way to go for quick inserts from scripts
-            objRs.AddNew aHeader, aData
-            
-            ' insert into using objConn does not perform...at all.
-            ' sData = join(aData,",")
-            ' objConn.execute "insert into [" & sTableName & "] (" & sHeader & ") values(" & sData & ");"
-            if i mod ipt = 0 then
-                objConn.CommitTrans
-                iTransactionCount = iTransactionCount + 1
-                objConn.BeginTrans
+            if d then
+                if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
+                if objFSO.FileExists(dbSqlite3 & "-journal") then objFSO.DeleteFile(dbSqlite3 & "-journal")
             end if
-        next
-        objConn.CommitTrans
-        iTransactionCount = iTransactionCount + 1
-        
-        dim time: time = (timer - dStart)
-        if time = 0 then time = 0.001
-        dim rps: rps = (r/cdbl(time))
-        
-        log rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
-        
-        query2csv("select myField_1 from test_table where id = " & r)
-        
-        select case t
-            case "INTEGER"
-                 if 1 <> clng(aQueryResults(2)(0)) then
-                    retValue = retValue + 1
-                end if
-           case "REAL"
-                if 1.1 <> cdbl(aQueryResults(2)(0)) then
-                    retValue = retValue + 1
-                end if
-            case "TEXT"
-                if """myField_1""" <> aQueryResults(2)(0) then
-                    retValue = retValue + 1
-                end if
-        end select
-
-        closedb
-
-        if d then if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
+            
+        end if
         
         test = rps & "," & time & "," & iBitness & "," & pk & "," & r & "," & c & "," & t & "," & pragma & ipt & "," & iTransactionCount
 
