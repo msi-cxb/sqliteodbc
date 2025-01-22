@@ -293,6 +293,10 @@ class classSqliteOdbcTests
 
         bVerboseOutput = false
         dim runTests: runTests = true
+        
+        if objFSO.FolderExists(strFolder & "\testDBs") = false then
+            objFSO.CreateFolder(strFolder & "\testDBs")
+        end if
 
         log "dbSqlite3 [" & dbSqlite3 & "]"
 
@@ -1222,6 +1226,8 @@ class classSqliteOdbcTests
         result = query2csv("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
         if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
         if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+        
+        ' examples from the source code https://www.sqlite.org/src/file/ext/misc/shathree.c
         query2csv("SELECT sha3(1) = sha3('1');")
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
         query2csv("SELECT sha3('hello') = sha3(x'68656c6c6f');")
@@ -1239,6 +1245,7 @@ class classSqliteOdbcTests
         closedb
         
         opendb "SQL3-sha"
+        ' examples from the source code https://www.sqlite.org/src/file/ext/misc/shathree.c
         log "loading via connection string works"
         query2csv("SELECT sha3(1) = sha3('1');")
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
@@ -1257,8 +1264,15 @@ class classSqliteOdbcTests
         closedb
         
         ' https://sqlite.org/forum/forumpost/23b2e479a0
-        ' recursive CTE to create table with 1 million rows then hash a column with sha3_agg
-        opendb "MEM  "
+        ' The hash is computed over the database content, not its representation on disk. 
+        ' This means, for example, that a VACUUM or similar data-preserving transformation does not change the hash.
+        ' recursive CTE to create table with 1 million rows then hash a column/table with SHA3 functions
+        dbSqlite3 = strFolder & "\testDBs\sha.sqlite3"
+        if objFSO.FileExists(dbSqlite3) then 
+            objFSO.DeleteFile(dbSqlite3)
+        end if
+        opendb "SQL3 "
+        
         result = query2csv("SELECT load_extension('.\install\" & sBitPath & "\shathree.dll') as loaded;")
         if aQueryResults(2)(0) <> "Null" then retValue = retValue+1
         if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
@@ -1272,6 +1286,7 @@ class classSqliteOdbcTests
             ") " & _
             "INSERT INTO people ( id, income, tax_rate) " & _
             "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
+            
         result = query2csv(q)
         if result = -1 then retValue = retValue + 1
         result = query2csv("select count(1) from people;")
@@ -1291,9 +1306,22 @@ class classSqliteOdbcTests
         if result <> 0 then retValue = retValue + 1
         result = query2csv("select * from sqlite_schema;")
         if result <> 5 then retValue = retValue + 1
+        
+        ' computes a SHA3 hash of the content of sqlite_schema sql column
         result = query2csv("select hex(sha3_agg(sql)) from sqlite_schema;")
         if aQueryResults(2)(0) <> """C915284FCD9F6DE50CDB25B68A42A6EB92089C54CC7F2E5C9BCA1F26007DEA89""" then retValue = retValue + 1
-        closedb
+        
+        ' computes a SHA3 hash of the content of the people table
+        result = query2csv("SELECT hex(sha3_query('SELECT * FROM people NOT INDEXED',224));")
+        if aQueryResults(2)(0) <> """87F6CC5C78303A212DF36D5F2D2DDF14799DDCA6B2E842C2FBEEE111""" then retValue = retValue + 1
+        
+        query2csv("vacuum;")
+        
+        ' verify vacuum does not change SHA3 hash
+        result = query2csv("SELECT hex(sha3_query('SELECT * FROM people NOT INDEXED',224));")
+        if aQueryResults(2)(0) <> """87F6CC5C78303A212DF36D5F2D2DDF14799DDCA6B2E842C2FBEEE111""" then retValue = retValue + 1
+        
+        closedb        
         
         if retValue > 0 then err.raise retValue
     end function
@@ -3310,20 +3338,70 @@ class classSqliteOdbcTests
         log "sqlite3_fts_tests"
         opendb "SQL3 "
         
-        log vbcrlf & "sqlite3_fts_tests"
-        ' Create an FTS table
+        ' FTS3 and FTS4 are nearly identical. They share most of their code in common, and their interfaces are the same.
+        log vbcrlf & "fts4"
         query("DROP TABLE IF EXISTS pages;")
         query("CREATE VIRTUAL TABLE pages USING fts4(title, body);")
-        ' Insert a row with a specific docid value.
+        
+        log vbcrlf & "insert"
         query("INSERT INTO pages(docid, title, body) VALUES(53, 'Home Page', 'SQLite is a software...');")
-        ' Insert a row and allow FTS to assign a docid value using the same algorithm as
-        ' SQLite uses for ordinary tables. In this case the new docid will be 54,
-        ' one greater than the largest docid currently present in the table.
         query("INSERT INTO pages(title, body) VALUES('Download', 'All SQLite source code...');")
         query("INSERT INTO pages(title, body) VALUES('Upload', 'Upload SQLite src code...');")
-        ' Example full-text-search queries
-        log query("SELECT * FROM pages WHERE pages MATCH 'sqlite';")
-        log query("SELECT * FROM pages WHERE pages MATCH 's* code';")
+        
+        log vbcrlf & "update"
+        query("UPDATE pages SET title = 'Download SQLite' WHERE rowid = 54;")
+        
+        log vbcrlf & "optimize"
+        query("INSERT INTO pages(pages) VALUES('optimize');")
+        
+        log vbcrlf & "query"
+        logResult query2csv("SELECT * FROM pages WHERE pages MATCH 'sqlite';")
+        logResult query2csv("SELECT * FROM pages WHERE pages MATCH 's* code';")
+
+
+        log vbcrlf & "fts5"
+        log query("CREATE VIRTUAL TABLE posts USING FTS5(title, body);")
+        log query(_
+            "INSERT INTO posts(title,body) " & _
+            "VALUES('Learn SQlite FTS5','This tutorial teaches you how to perform full-text search using FTS5'), " & _
+            "('Advanced SQlite Full-text Search','Show you some advanced techniques in SQLite full-text searching'), " & _
+            "('SQLite SQLite SQLite SQLite ','SQLite SQLite SQLite SQLite SQLite SQLite SQLite SQLite SQLite SQLite '), " & _
+            "('SQLite Tutorial','Help you learn SQLite quickly and use SQLite effectively'); ")
+            
+        log vbcrlf & "query"
+        logResult query2csv("SELECT * FROM posts;")
+        
+        log vbcrlf & "full text search"
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'fts5';")
+        logResult query2csv("SELECT * FROM posts WHERE posts = 'fts5';")
+        logResult query2csv("SELECT * FROM posts('fts5');")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'text' ORDER BY rank;")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'learn SQLite';")
+        logResult query2csv("SELECT * FROM posts WHERE posts = 'search*';")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'learn NOT text';")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'learn OR text';")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'sqlite AND searching';")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'search AND sqlite OR help';")
+        logResult query2csv("SELECT * FROM posts WHERE posts MATCH 'search AND (sqlite OR help)';")
+        
+        log vbcrlf & "highlight"
+        logResult query2csv("SELECT  " & _
+            "highlight(posts,0, '<b>', '</b>') title,  " & _
+            "highlight(posts,1, '<b>', '</b>') body  " & _
+            "FROM posts WHERE posts MATCH 'SQLite' " & _
+            "ORDER BY rank;")
+            
+        log vbcrlf & "bm25()/rank"
+        logResult query2csv("SELECT bm25(posts) as accuracy, * FROM posts WHERE posts MATCH 'sqlite' ORDER BY bm25(posts);")
+        
+        ' must have MATCH for rank to be non-null
+        logResult query2csv("SELECT rank, * FROM posts WHERE posts MATCH 'sqlite' ORDER BY rank;")
+
+        log vbcrlf & "snippet"
+        logResult query2csv("SELECT  " & _
+            "snippet(posts,0,'<<','>>','...',3) title,  " & _
+            "snippet(posts,1,'<<','>>','...',6) body  " & _
+            "FROM posts WHERE posts MATCH 'sqLite' ;")
 
         if objRS.state = 1 then objRS.close
         closedb
@@ -3850,10 +3928,6 @@ class classSqliteOdbcTests
 
         if s = false then
         
-            if Not(objFSO.FolderExists(strFolder & "\testDBs")) then
-                objFSO.CreateFolder(strFolder & "\testDBs")
-            end if 
-        
             dbSqlite3 = strFolder & "\testDBs\" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
             if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
             opendb "SQL3 "
@@ -4022,9 +4096,9 @@ class classSqliteOdbcTests
             case "SQL3-sqlfcmp"
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\sqlfcmp.dll;"
         end select
-        
+
         if bVerboseOutput then log p & " " & sConnStr & vbcrlf
-        
+                
         objConn.ConnectionString = sConnStr
         objConn.open
         Set ObjRS = CreateObject("ADODB.Recordset")
