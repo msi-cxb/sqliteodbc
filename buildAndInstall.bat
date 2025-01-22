@@ -66,9 +66,8 @@ if errorlevel 1 (echo build error & goto :exit)
 
 set installDir=.\install\%bit%bit
 
-CALL :fn_CopyFilesToInstall
-
 if %install%==true (
+  CALL :fn_CopyFilesToInstall
   CALL :fn_InstallDriver
 )
 
