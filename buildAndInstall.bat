@@ -53,7 +53,8 @@ REM if errorlevel 1 (echo clean error & goto :exit)
 echo building...
 
 REM build driver, extension, and commandline utilities
-nmake -f sqlite3odbc.mak all 
+REM nmake -f sqlite3odbc.mak all DEBUG=1
+nmake -f sqlite3odbc.mak all
 
 REM build just the driver
 REM nmake -f sqlite3odbc.mak driver

@@ -475,7 +475,7 @@ int sqlite3_sqlfcmp_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routine
 
     SQLITE_EXTENSION_INIT2(pApi);
 
-    nErr += sqlite3_create_function(db, "if",           3, SQLITE_UTF8|SQLITE_DETERMINISTIC|SQLITE_INNOCUOUS,  0,              _ifFunc,        0, 0);
+    //nErr += sqlite3_create_function(db, "if",           3, SQLITE_UTF8|SQLITE_DETERMINISTIC|SQLITE_INNOCUOUS,  0,              _ifFunc,        0, 0);
     nErr += sqlite3_create_function(db, "ulp",         -1, SQLITE_UTF8|SQLITE_DETERMINISTIC|SQLITE_INNOCUOUS,  0,              _ulp,           0, 0);
     nErr += sqlite3_create_function(db, "epsilon",     -1, SQLITE_UTF8|SQLITE_DETERMINISTIC|SQLITE_INNOCUOUS,  0,              _ulp,           0, 0);
     nErr += sqlite3_create_function(db, "ulps",        -1, SQLITE_UTF8|SQLITE_DETERMINISTIC|SQLITE_INNOCUOUS,  0,              _ulps,          0, 0);

@@ -453,7 +453,7 @@ class classSqliteOdbcTests
             sqlite_extension_fileio
             If Err.Number <> 0 Then wscript.quit -1
 
-            sqlite_sqlfcmp_printf_format
+            sqlite_sqlfcmp
             If Err.Number <> 0 Then wscript.quit -1
         
             dbSqlite3 = strFolder & "\testDBs\crypto.sqlite3"
@@ -588,7 +588,7 @@ class classSqliteOdbcTests
     end function
 
     '********************************************
-    public function sqlite_sqlfcmp_printf_format
+    public function sqlite_sqlfcmp
         dim s: s = ""
         dim retValue: retValue = 0
 
@@ -597,7 +597,7 @@ class classSqliteOdbcTests
         ' DO match output from locally compiled SQLite3
 
         log "******************************************************"
-        log "sqlite_sqlfcmp_printf_format (printf added 3.38.0)"
+        log "sqlite_sqlfcmp (Keith Medcalf extension)"
         
         opendb "MEM  "
         log "load_extension('.\install\" & sBitPath & "\sqlfcmp.dll') will throw error but it does load the extension"
@@ -643,7 +643,6 @@ class classSqliteOdbcTests
         
         closedb
 
-        log "connection string sqlfcmp"
         opendb "SQL3-sqlfcmp"
 
         query2csv("drop table if exists t;")
