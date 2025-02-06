@@ -302,7 +302,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-
+        
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -387,7 +387,6 @@ class classSqliteOdbcTests
             sqlite_strictTable
             If Err.Number <> 0 Then wscript.quit -1
 
-            ' 3.46 updates and improvements
             sqlite_double_quoted_strings
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -1310,21 +1309,71 @@ class classSqliteOdbcTests
         result = query2csv("select hex(sha3_agg(sql)) from sqlite_schema;")
         if aQueryResults(2)(0) <> """C915284FCD9F6DE50CDB25B68A42A6EB92089C54CC7F2E5C9BCA1F26007DEA89""" then retValue = retValue + 1
         
-        ' computes a SHA3 hash of the content of the people table
-        result = query2csv("SELECT hex(sha3_query('SELECT * FROM people NOT INDEXED',224));")
-        if aQueryResults(2)(0) <> """87F6CC5C78303A212DF36D5F2D2DDF14799DDCA6B2E842C2FBEEE111""" then retValue = retValue + 1
+        ' computes a SHA3 hash of the content of the people table (SQL must match so that result matches .selftest --init)
+        result = query2csv("SELECT hex(sha3_query('SELECT * FROM ""people"" NOT INDEXED',224));")
+        if aQueryResults(2)(0) <> """118C9A7D89C7A5A4A672E28C5CB72A4CF434A7D3A3DD0FA73D57CAF6""" then retValue = retValue + 1
         
         query2csv("vacuum;")
         
         ' verify vacuum does not change SHA3 hash
-        result = query2csv("SELECT hex(sha3_query('SELECT * FROM people NOT INDEXED',224));")
-        if aQueryResults(2)(0) <> """87F6CC5C78303A212DF36D5F2D2DDF14799DDCA6B2E842C2FBEEE111""" then retValue = retValue + 1
+        result = query2csv("SELECT hex(sha3_query('SELECT * FROM ""people"" NOT INDEXED',224));")
+        if aQueryResults(2)(0) <> """118C9A7D89C7A5A4A672E28C5CB72A4CF434A7D3A3DD0FA73D57CAF6""" then retValue = retValue + 1
         
-        closedb        
+        dim sha_result: sha_result = aQueryResults(2)(0)
+        log "sha_result " & result & " " & sha_result
+        
+        closedb
+        
+        ' make a copy of the database
+        log "copy " & strFolder & "\testDBs\sha.sqlite3" & " to " & strFolder & "\testDBs\sha_orig.sqlite3"
+        helper_copy_file strFolder & "\testDBs\sha.sqlite3", strFolder & "\testDBs\sha_orig.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs\sha_orig.sqlite3"
+
+        ' open the database copy
+        opendb "SQL3-sha"
+        
+        ' verify SHA3 hash of the copy
+        on error goto 0
+        result = query2csv("SELECT hex(sha3_query('SELECT * FROM ""people"" NOT INDEXED',224));")
+        
+        if aQueryResults(2)(0) <> sha_result then retValue = retValue + 1
+        
+        closedb
+        
+        dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
         
         if retValue > 0 then err.raise retValue
     end function
 
+    '********************************************
+    public function helper_copy_file(SourceFile,DestinationFile)
+
+        'Check to see if the file already exists in the destination folder
+        Dim wasReadOnly
+        wasReadOnly = False
+        If objFso.FileExists(DestinationFile) Then
+        
+            'Check to see if the file is read-only
+            If objFso.GetFile(DestinationFile).Attributes And 1 Then 
+                'The file exists and is read-only.
+                'Remove the read-only attribute
+                objFso.GetFile(DestinationFile).Attributes = objFso.GetFile(DestinationFile).Attributes - 1
+                wasReadOnly = True
+            End If
+
+            objFso.DeleteFile DestinationFile, True
+        End If
+
+        'Copy the file...overwriting existing file if necessary
+        objFso.CopyFile SourceFile, DestinationFile, True
+
+        If wasReadOnly Then
+            'Reapply the read-only attribute
+            objFso.GetFile(DestinationFile).Attributes = objFso.GetFile(DestinationFile).Attributes + 1
+        End If
+        
+    end function
+    
     '********************************************
     public function sqlite_extension_functions_series
         dim s: s = ""
