@@ -95,6 +95,9 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: "file listing"
+        run:
+          ls -R
       - name: "VirusTotal"
         uses: cssnr/virustotal-action@master
         with:
