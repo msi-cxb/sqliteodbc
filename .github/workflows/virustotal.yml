@@ -9,6 +9,7 @@ on:
 
 jobs:
   virustotal:
+    environment: virustotal
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -18,7 +19,6 @@ jobs:
       - name: VirusTotal Scan
         uses: crazy-max/ghaction-virustotal@v4
         with:
-          environment: "virustotal"
           vt_api_key: ${{ secrets.VT_API_KEY }}
           update_release_body: true
           files: |
