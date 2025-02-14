@@ -88,10 +88,11 @@ jobs:
         #     artifacts: "sqliteodbc.zip"
         
         - name: cache
-          uses: actions/cache@v3
+          uses: actions/cache/save@v4
           with:
             path: install
-            key: some-crappy-key-i-made-up
+            key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+            enableCrossOsArchive: true
 
   virustotal:
     name: "VirusTotal Scan"
@@ -102,10 +103,10 @@ jobs:
 
     steps:
       - name: cache
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v4
         with:
           path: install
-          key: some-crappy-key-i-made-up
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
       - name: "file listing"
         run:
           ls -R
