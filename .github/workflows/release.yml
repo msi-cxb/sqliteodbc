@@ -78,6 +78,7 @@ jobs:
             xcopy /Q /Y Release.txt install 1>nul
             7z a sqliteodbc.zip install
             dir /s /b install
+            echo cache-${{ github.run_id }}-${{ github.run_attempt }}
 
         - name: cache
           uses: actions/cache/save@v4
