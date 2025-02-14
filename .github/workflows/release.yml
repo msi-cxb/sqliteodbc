@@ -20,11 +20,11 @@ jobs:
           id: setup_msbuild
           uses: microsoft/setup-msbuild@v2
 
-        # - name: build 32 bit ODBC driver
-        #   id: build_32_bit_ODBC_driver
-        #   shell: cmd
-        #   run: |
-        #     buildAndInstall.bat 32 true
+        - name: build 32 bit ODBC driver
+          id: build_32_bit_ODBC_driver
+          shell: cmd
+          run: |
+            buildAndInstall.bat 32 true
   
         - name: build 64 bit ODBC driver
           id: build_64_bit_ODBC_driver
@@ -80,12 +80,12 @@ jobs:
             7z a sqliteodbc.zip install
             dir /s /b install
 
-        # - name: release
-        #   id: release
-        #   uses: ncipollo/release-action@v1
-        #   with:
-        #     replacesArtifacts: true
-        #     artifacts: "sqliteodbc.zip"
+        - name: release
+          id: release
+          uses: ncipollo/release-action@v1
+          with:
+            replacesArtifacts: true
+            artifacts: "sqliteodbc.zip"
         
         - name: cache
           uses: actions/cache/save@v4
@@ -120,6 +120,8 @@ jobs:
           file_globs: |
             install/64bit/*.exe
             install/64bit/*.dll
+            install/32bit/*.exe
+            install/32bit/*.dll
 
         # - shell: cmd
         #   id: cmd
