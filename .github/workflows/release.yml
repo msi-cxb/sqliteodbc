@@ -86,7 +86,13 @@ jobs:
         #   with:
         #     replacesArtifacts: true
         #     artifacts: "sqliteodbc.zip"
-            
+        
+        - name: cache
+          uses: actions/cache@v3
+          with:
+            path: install
+            key: some-crappy-key-i-made-up
+
   virustotal:
     name: "VirusTotal Scan"
     environment: virustotal
@@ -95,6 +101,11 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: cache
+        uses: actions/cache@v3
+        with:
+          path: install
+          key: some-crappy-key-i-made-up
       - name: "file listing"
         run:
           ls -R
