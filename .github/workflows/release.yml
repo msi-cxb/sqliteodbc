@@ -72,13 +72,13 @@ jobs:
         #     mkdir %installDir%
         #     xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
   
-        # - name: check
-        #   shell: cmd
-        #   run: |
-        #     echo ${{ github.repository }} Tag: ${{ github.ref_name }} SHA: ${{ github.sha }} > Release.txt
-        #     xcopy /Q /Y Release.txt install 1>nul
-        #     7z a sqliteodbc.zip install
-        #     dir /s /b install
+        - name: check
+          shell: cmd
+          run: |
+            echo ${{ github.repository }} Tag: ${{ github.ref_name }} SHA: ${{ github.sha }} > Release.txt
+            xcopy /Q /Y Release.txt install 1>nul
+            7z a sqliteodbc.zip install
+            dir /s /b install
 
         # - name: release
         #   id: release
@@ -103,8 +103,8 @@ jobs:
           update_release: true
           rate_limit: 4
           file_globs: |
-            *.exe
-            *.dll
+            install/64bit/*.exe
+            install/64bit/*.dll
 
         # - shell: cmd
         #   id: cmd
