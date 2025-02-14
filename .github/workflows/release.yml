@@ -79,6 +79,13 @@ jobs:
             7z a sqliteodbc.zip install
             dir /s /b install
 
+        - name: cache
+          uses: actions/cache/save@v4
+          with:
+            path: install
+            key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+            enableCrossOsArchive: true
+
         - name: release
           id: release
           uses: ncipollo/release-action@v1
@@ -86,12 +93,6 @@ jobs:
             replacesArtifacts: true
             artifacts: "sqliteodbc.zip"
         
-        - name: cache
-          uses: actions/cache/save@v4
-          with:
-            path: install
-            key: cache-${{ github.run_id }}-${{ github.run_attempt }}
-            enableCrossOsArchive: true
 
   virustotal:
     name: "VirusTotal Scan"
