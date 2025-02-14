@@ -12,49 +12,49 @@ jobs:
   build-and-release-sqliteodbc:
     runs-on: windows-latest
     steps:
-        - name: checkout
-          id: checkout_code
-          uses: actions/checkout@v4
+      - name: checkout
+        id: checkout_code
+        uses: actions/checkout@v4
 
-        - name: setup_msbuild
-          id: setup_msbuild
-          uses: microsoft/setup-msbuild@v2
+      - name: setup_msbuild
+        id: setup_msbuild
+        uses: microsoft/setup-msbuild@v2
 
-        - name: build 32 bit ODBC driver
-          id: build_32_bit_ODBC_driver
-          shell: cmd
-          run: |
-            buildAndInstall.bat 32 true
-  
-        - name: build 64 bit ODBC driver
-          id: build_64_bit_ODBC_driver
-          shell: cmd
-          run: |
-            buildAndInstall.bat 64 true
+      - name: build 32 bit ODBC driver
+        id: build_32_bit_ODBC_driver
+        shell: cmd
+        run: |
+          buildAndInstall.bat 32 true
 
-        - name: check
-          shell: cmd
-          run: |
-            echo ${{ github.repository }} Tag: ${{ github.ref_name }} SHA: ${{ github.sha }} > Release.txt
-            echo ""  >> Release.txt
-            echo cache-${{ github.run_id }}-${{ github.run_attempt }} >> Release.txt
-            xcopy /Q /Y Release.txt install 1>nul
-            7z a sqliteodbc.zip install
-            dir /s /b install
+      - name: build 64 bit ODBC driver
+        id: build_64_bit_ODBC_driver
+        shell: cmd
+        run: |
+          buildAndInstall.bat 64 true
 
-        - name: cache
-          uses: actions/cache/save@v4
-          with:
-            path: install
-            key: cache-${{ github.run_id }}-${{ github.run_attempt }}
-            enableCrossOsArchive: true
+      - name: check
+        shell: cmd
+        run: |
+          echo ${{ github.repository }} Tag: ${{ github.ref_name }} SHA: ${{ github.sha }} > Release.txt
+          echo ""  >> Release.txt
+          echo cache-${{ github.run_id }}-${{ github.run_attempt }} >> Release.txt
+          xcopy /Q /Y Release.txt install 1>nul
+          7z a sqliteodbc.zip install
+          dir /s /b install
 
-        - name: release
-          id: release
-          uses: ncipollo/release-action@v1
-          with:
-            replacesArtifacts: true
-            artifacts: "sqliteodbc.zip"
+      - name: cache
+        uses: actions/cache/save@v4
+        with:
+          path: install
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          enableCrossOsArchive: true
+
+      - name: release
+        id: release
+        uses: ncipollo/release-action@v1
+        with:
+          replacesArtifacts: true
+          artifacts: "sqliteodbc.zip"
 
   virustotal:
     environment: virustotal
