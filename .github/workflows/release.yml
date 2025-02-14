@@ -102,6 +102,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           vt_api_key: ${{ secrets.VT_API_KEY }}
           update_release: true
+          rate_limit: 4
+          file_globs: |
+            ./install/32bit/*.exe
+            ./install/32bit/*.dll
+            ./install/64bit/*.exe
+            ./install/64bit/*.dll
 
         # - shell: cmd
         #   id: cmd
