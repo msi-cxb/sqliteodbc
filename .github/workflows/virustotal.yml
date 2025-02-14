@@ -12,10 +12,6 @@ jobs:
     environment: virustotal
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        id: checkout_code
-        uses: actions/checkout@v4
-
       - name: VirusTotal Scan
         uses: crazy-max/ghaction-virustotal@v4
         with:
@@ -24,5 +20,4 @@ jobs:
           files: |
             *.exe
             *.dll
-            *.patch
 
