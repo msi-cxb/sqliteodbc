@@ -210,9 +210,7 @@ class classSqliteOdbcTests
             strFolder = objFSO.GetParentFolderName(Replace(location.pathname,"%20"," "))
         end if
         on error goto 0
-        
-        log "strFolder [" & strFolder & "]"
-        
+                
         Set dDataTypes = CreateObject("Scripting.Dictionary")
         dDataTypes.add 20,"adBigInt" 'Indicates an eight-byte signed integer (DBTYPE_I8).
         dDataTypes.add 128,"adBinary" 'Indicates a binary value (DBTYPE_BYTES).
@@ -297,7 +295,9 @@ class classSqliteOdbcTests
         if objFSO.FolderExists(strFolder & "\testDBs") = false then
             objFSO.CreateFolder(strFolder & "\testDBs")
         end if
-
+        
+        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+        log "strFolder [" & strFolder & "]"
         log "dbSqlite3 [" & dbSqlite3 & "]"
 
         sqlite_version
@@ -311,7 +311,7 @@ class classSqliteOdbcTests
             log dumpPragma
             If Err.Number <> 0 Then wscript.quit -1
 
-            dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+            dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
             sqlite3_BuiltIn_Tests
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -411,7 +411,7 @@ class classSqliteOdbcTests
 
         ' extension tests
         if runTests then
-            dbSqlite3 = strFolder & "\testDBs\csv.sqlite3"
+            dbSqlite3 = strFolder & "\testDBs\csv" & sBitPath & ".sqlite3"
             sqlite_extension_functions_csv
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -442,7 +442,7 @@ class classSqliteOdbcTests
             sqlite_extension_uuid
             If Err.Number <> 0 Then wscript.quit -1
 
-            dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+            dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
             sqlite_extension_bfsvtab
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -455,7 +455,7 @@ class classSqliteOdbcTests
             sqlite_sqlfcmp
             If Err.Number <> 0 Then wscript.quit -1
         
-            dbSqlite3 = strFolder & "\testDBs\crypto.sqlite3"
+            dbSqlite3 = strFolder & "\testDBs\crypto" & sBitPath & ".sqlite3"
             sqlite_extension_crypto
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -883,7 +883,7 @@ class classSqliteOdbcTests
         REM │ *        │ randomness   │ 1     │
         REM └──────────┴──────────────┴───────┘
 
-        dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
         opendb "SQL3 "
         logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\vfsstat.dll') as ext_loaded")
         logResult query2csv("DROP TABLE IF EXISTS t1;")
@@ -1265,7 +1265,7 @@ class classSqliteOdbcTests
         ' The hash is computed over the database content, not its representation on disk. 
         ' This means, for example, that a VACUUM or similar data-preserving transformation does not change the hash.
         ' recursive CTE to create table with 1 million rows then hash a column/table with SHA3 functions
-        dbSqlite3 = strFolder & "\testDBs\sha.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs\sha" & sBitPath & ".sqlite3"
         if objFSO.FileExists(dbSqlite3) then 
             objFSO.DeleteFile(dbSqlite3)
         end if
@@ -1325,9 +1325,9 @@ class classSqliteOdbcTests
         closedb
         
         ' make a copy of the database
-        log "copy " & strFolder & "\testDBs\sha.sqlite3" & " to " & strFolder & "\testDBs\sha_orig.sqlite3"
-        helper_copy_file strFolder & "\testDBs\sha.sqlite3", strFolder & "\testDBs\sha_orig.sqlite3"
-        dbSqlite3 = strFolder & "\testDBs\sha_orig.sqlite3"
+        log "copy " & strFolder & "\testDBs\sha" & sBitPath & ".sqlite3" & " to " & strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
+        helper_copy_file strFolder & "\testDBs\sha" & sBitPath & ".sqlite3", strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
 
         ' open the database copy
         opendb "SQL3-sha"
@@ -1340,7 +1340,7 @@ class classSqliteOdbcTests
         
         closedb
         
-        dbSqlite3 = strFolder & "\testDBs\testfile.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
         
         if retValue > 0 then err.raise retValue
     end function
@@ -3408,6 +3408,7 @@ class classSqliteOdbcTests
 
 
         log vbcrlf & "fts5"
+        query("DROP TABLE IF EXISTS posts;")
         log query("CREATE VIRTUAL TABLE posts USING FTS5(title, body);")
         log query(_
             "INSERT INTO posts(title,body) " & _
