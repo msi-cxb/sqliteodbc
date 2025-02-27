@@ -196,11 +196,12 @@ class classSqliteOdbcTests
         separator = ","
         
         aQueryResults = Array()
-        redim aQueryResults(4)
+        redim aQueryResults(5)
         aQueryResults(0) = ""
         aQueryResults(1) = ""
         set aQueryResults(2) = CreateObject("Scripting.Dictionary")
         aQueryResults(3) = ""
+        aQueryResults(4) = 0
         
         on error resume next
         'try wscript first...if it works then move on
@@ -290,7 +291,7 @@ class classSqliteOdbcTests
         log ""
 
         bVerboseOutput = false
-        dim runTests: runTests = true
+        dim runTests: runTests = false
         
         if objFSO.FolderExists(strFolder & "\testDBs") = false then
             objFSO.CreateFolder(strFolder & "\testDBs")
@@ -302,7 +303,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-        
+
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -465,6 +466,12 @@ class classSqliteOdbcTests
 
         end if
         
+        ' ssb tests (only if .\testDbs\ssb_1.sqlite3 is available)
+        if runTests then
+            sqlite_ssb
+            If Err.Number <> 0 Then wscript.quit -1
+        end if
+        
         ' insert tests
         if runTests then
             insertTests
@@ -504,6 +511,328 @@ class classSqliteOdbcTests
         opendb "MEM  "
         log query("SELECT sqlite_version() as vers, sqlite_source_id() as srcId;")
         closedb
+    end function
+
+    '********************************************
+    public function sqlite_ssb
+        ' SSB (Star Schema Benchmark) https://sqlite.org/test-dbs/wiki/home.md
+        dim retValue: retValue = 0
+        dim sql
+        dim i
+        dim temp: temp = dbSqlite3
+        dbSqlite3 = strFolder & "\testDBs\ssb_1.sqlite3"
+        If objFso.FileExists(dbSqlite3) = false Then
+            log dbSqlite3 & " does not exist! Skipping test sqlite_ssb"
+            exit function
+        end if
+        log "strFolder [" & strFolder & "]"
+        log "dbSqlite3 [" & dbSqlite3 & "]"
+        opendb "SQL3 "
+        logResult query2csv("ANALYZE;")
+        logResult query2csv("select * from sqlite_stat1;")
+        
+        REM note that vbscript doesn't have unsigned long or long long 
+        REM so add "1.0*" force the return value to be a double
+        
+        log ""
+        log "Q1.1"
+        sql = _
+            "SELECT sum(lo_extendedprice*lo_discount)*1.0 AS revenue " & _
+            "FROM lineorder, date " & _
+             "WHERE lo_orderdate = d_datekey " & _
+            "   AND d_year = 1993 " & _
+            "   AND lo_discount between 1 and 3 " & _
+            "   AND lo_quantity < 25;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2)(0) <> 445921715901. then retValue = retValue + 1
+        log ""
+        
+        log "Q1.2"
+        sql = _
+            "SELECT sum(lo_extendedprice*lo_discount)*1.0 AS revenue " & _
+            "  FROM lineorder, date " & _
+             "WHERE lo_orderdate = d_datekey " & _
+            "   AND d_yearmonthnum = 199401 " & _
+            "   AND lo_quantity BETWEEN 26 AND 35 " & _
+            "   AND lo_discount BETWEEN 4 AND 6; "
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2)(0) <> 97884685311. then retValue = retValue + 1
+        log ""
+
+        log "Q1.3"
+        sql = _
+            "SELECT sum(lo_extendedprice*lo_discount)*1.0 AS revenue " & _
+            "  FROM lineorder, date " & _
+            " WHERE lo_orderdate = d_datekey " & _
+            "   AND d_weeknuminyear = 6 " & _
+            "   AND d_year = 1994 " & _
+            "   AND lo_quantity BETWEEN 36 AND 40 " & _
+            "   AND lo_discount BETWEEN 5 AND 7;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2)(0) <> 15834374216. then retValue = retValue + 1
+        log ""
+
+        log "Q2.1"
+        sql = _
+            "SELECT sum(lo_revenue), d_year, p_brand1 " & _
+            "  FROM lineorder, date, part, supplier " & _
+            " WHERE lo_orderdate = d_datekey " & _
+            "   AND lo_partkey = p_partkey " & _
+            "   AND lo_suppkey = s_suppkey " & _
+            "   AND p_category = 'MFGR#12' " & _
+            "   AND s_region = 'AMERICA' " & _
+            " GROUP BY d_year, p_brand1 " & _
+            " ORDER BY d_year, p_brand1;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 280 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> "592914893,1992,""MFGR#121""" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> "391256207,1998,""MFGR#129""" then retValue = retValue + 1
+        log ""
+
+        log "Q2.2"
+        sql = _
+            " SELECT sum(lo_revenue), d_year, p_brand1 " & _
+            "   FROM lineorder, date, part, supplier " & _
+            "  WHERE lo_orderdate = d_datekey " & _
+            "    AND lo_partkey = p_partkey " & _
+            "    AND lo_suppkey = s_suppkey " & _
+            "    AND p_category = 'MFGR#12' " & _
+            "    AND p_brand1 BETWEEN 'MFGR#2221' AND 'MFGR#2228' " & _
+            "    AND s_region = 'ASIA' " & _
+            "  GROUP BY d_year, p_brand1 " & _
+            "  ORDER BY d_year, p_brand1;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 0 then retValue = retValue + 1
+        log ""
+
+        log "Q2.3"
+        sql = _
+            " SELECT sum(lo_revenue), d_year, p_brand1 " & _
+            "   FROM lineorder, date, part, supplier " & _
+            "  WHERE lo_orderdate = d_datekey " & _
+            "    AND lo_partkey = p_partkey " & _
+            "    AND lo_suppkey = s_suppkey " & _
+            "    AND p_category = 'MFGR#12' " & _
+            "    AND p_brand1 = 'MFGR#2339' " & _
+            "    AND s_region = 'EUROPE' " & _
+            "  GROUP BY d_year, p_brand1 " & _
+            "  ORDER BY d_year, p_brand1;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 0 then retValue = retValue + 1
+        log ""
+        
+        log "Q3.1"
+        sql = _
+            " SELECT c_nation, s_nation, d_year, sum(lo_revenue)*1.0 as revenue " & _
+            "   FROM customer, lineorder, supplier, date " & _
+            "  WHERE lo_custkey = c_custkey " & _
+            "    AND lo_suppkey = s_suppkey " & _
+            "    AND lo_orderdate = d_datekey " & _
+            "    AND c_region = 'ASIA' " & _
+            "    AND s_region = 'ASIA' " & _
+            "    AND d_year >= 1992 AND d_year <= 1997 " & _
+            "  GROUP BY c_nation, s_nation, d_year " & _
+            "  ORDER BY d_year asc, revenue desc; "
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 150 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """INDONESIA"",""CHINA"",1992,6832245482" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> """JAPAN"",""VIETNAM"",1997,5082530275" then retValue = retValue + 1
+        log ""
+
+        log "Q3.2"
+        sql = _
+            " SELECT c_city, s_city, d_year, sum(lo_revenue)*1.0 as revenue " & _
+            "   FROM customer, lineorder, supplier, date " & _
+            "  WHERE lo_custkey = c_custkey " & _
+            "    AND lo_suppkey = s_suppkey " & _
+            "    AND lo_orderdate = d_datekey " & _
+            "    AND c_nation = 'UNITED STATES' " & _
+            "    AND s_nation = 'UNITED STATES' " & _
+            "    AND d_year >= 1992 AND d_year <= 1997 " & _
+            "  GROUP BY c_city, s_city, d_year " & _
+            "  ORDER BY d_year asc, revenue desc;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 600 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """UNITED ST5"",""UNITED ST4"",1992,110092110" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> """UNITED ST2"",""UNITED ST8"",1997,2685648" then retValue = retValue + 1
+        log ""
+
+        log "Q3.3"
+        sql = _
+            "  SELECT c_city, s_city, d_year, sum(lo_revenue)*1.0 as revenue " & _
+            "    FROM customer, lineorder, supplier, date " & _
+            "   WHERE lo_custkey = c_custkey " & _
+            "     AND lo_suppkey = s_suppkey " & _
+            "     AND lo_orderdate = d_datekey " & _
+            "     AND (c_city='UNITED KI1' OR c_city='UNITED KI5') " & _
+            "     AND (s_city='UNITED KI1' OR s_city='UNITED KI5') " & _
+            "     AND d_year >= 1992 and d_year <= 1997 " & _
+            "   GROUP BY c_city, s_city, d_year " & _
+            "   ORDER BY d_year asc, revenue desc; "
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 24 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """UNITED KI5"",""UNITED KI5"",1992,65017072" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> """UNITED KI5"",""UNITED KI5"",1997,43919771" then retValue = retValue + 1
+        log ""
+
+        log "Q3.4"
+        sql = _
+            "SELECT c_city, s_city, d_year, sum(lo_revenue)*1.0 as revenue " & _
+            "  FROM customer, lineorder, supplier, date " & _
+            " WHERE lo_custkey = c_custkey " & _
+            "   AND lo_suppkey = s_suppkey " & _
+            "   AND lo_orderdate = d_datekey " & _
+            "   AND (c_city='UNITED KI1' OR c_city='UNITED KI5') " & _
+            "   AND (s_city='UNITED KI1' OR s_city='UNITED KI5') " & _
+            "   AND d_yearmonth = 'Dec1997' " & _
+            " GROUP BY c_city, s_city, d_year " & _
+            " ORDER BY d_year asc, revenue desc; "
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 3 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """UNITED KI1"",""UNITED KI5"",1997,7816232" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> """UNITED KI5"",""UNITED KI1"",1997,2660888" then retValue = retValue + 1
+        log ""
+
+        log "Q4.1"
+        sql = _
+            "SELECT d_year, c_nation, sum(lo_revenue - lo_supplycost)*1.0 as profit " & _
+            "  FROM date, customer, supplier, part, lineorder " & _
+            " WHERE lo_custkey = c_custkey " & _
+            "   AND lo_suppkey = s_suppkey " & _
+            "   AND lo_partkey = p_partkey " & _
+            "   AND lo_orderdate = d_datekey " & _
+            "   AND c_region = 'AMERICA' " & _
+              " AND s_region = 'AMERICA' " & _
+            "   AND (p_mfgr = 'MFGR#1' OR p_mfgr = 'MFGR#2') " & _
+            " GROUP BY d_year, c_nation " & _
+            " ORDER BY d_year, c_nation;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 35 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> "1992,""ARGENTINA"",9590071009" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> "1998,""UNITED STATES"",6093224132" then retValue = retValue + 1
+        log ""
+
+        log "Q4.2"
+        sql = _
+            "SELECT d_year, s_nation, p_category, sum(lo_revenue - lo_supplycost)*1.0 as profit " & _
+            "  FROM date, customer, supplier, part, lineorder " & _
+             "WHERE lo_custkey = c_custkey " & _
+            "   AND lo_suppkey = s_suppkey " & _
+            "   AND lo_partkey = p_partkey " & _
+            "   AND lo_orderdate = d_datekey " & _
+            "   AND c_region = 'AMERICA' " & _
+            "   AND s_region = 'AMERICA' " & _
+            "   AND (d_year = 1997 OR d_year = 1998) " & _
+            "   AND (p_mfgr = 'MFGR#1' OR p_mfgr = 'MFGR#2') " & _
+            " GROUP BY d_year, s_nation, p_category " & _
+            " ORDER BY d_year, s_nation, p_category;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 100 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> "1997,""ARGENTINA"",""MFGR#11"",1023857902" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> "1998,""UNITED STATES"",""MFGR#25"",608169909" then retValue = retValue + 1
+        log ""
+
+        log "Q4.3"
+        sql = _
+            " SELECT d_year, s_city, p_brand1, sum(lo_revenue - lo_supplycost)*1.0 as profit " & _
+            "   FROM date, customer, supplier, part, lineorder " & _
+            "  WHERE lo_custkey = c_custkey " & _
+            "    AND lo_suppkey = s_suppkey " & _
+            "    AND lo_partkey = p_partkey " & _
+            "    AND lo_orderdate = d_datekey " & _
+            "    AND c_region = 'AMERICA' " & _
+            "    AND s_nation = 'UNITED STATES' " & _
+            "    AND (d_year = 1997 or d_year = 1998) " & _
+            "    AND p_category = 'MFGR#14' " & _
+            "  GROUP BY d_year, s_city, p_brand1 " & _
+            "  ORDER BY d_year, s_city, p_brand1;"
+        query2csv( "EXPLAIN  QUERY PLAN " & sql)
+        log "EXPLAIN  QUERY PLAN"
+        for i = 0 to aQueryResults(2).count-1
+            log i & " " & split(aQueryResults(2)(i),",")(3)
+        next
+        query2csv( sql )
+        log "time: " & aQueryResults(4) & " seconds"
+        if aQueryResults(2).count <> 324 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> "1997,""UNITED ST0"",""MFGR#1411"",5174140" then retValue = retValue + 1
+        if aQueryResults(2)(aQueryResults(2).count-1) <> "1998,""UNITED ST9"",""MFGR#149"",1755488" then retValue = retValue + 1
+        log ""
+        
+        closedb
+        dbSqlite3 = temp
+        if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
@@ -4307,6 +4636,7 @@ class classSqliteOdbcTests
         query2csv = 0
         aQueryResults(2).removeall
         aQueryResults(3) = ""
+        aQueryResults(4) = Timer
         dim rowCount: rowCount = 0
         dim bOutputTextType: bOutputTextType = true
         dim ss
@@ -4315,11 +4645,13 @@ class classSqliteOdbcTests
         if typename(objConn) = "Empty" then
             aQueryResults(3) = "No connection object. Did you call 'opendb()' first?"
             on error goto 0
+            aQueryResults(4) = Timer - aQueryResults(4)
             exit function
         end if
         dim oRs: set oRs = objConn.execute(s & ";")
         if err.number <> 0 then
             aQueryResults(3) = aQueryResults(3) & err.number & ":" & err.description & vbcrlf
+            aQueryResults(4) = Timer - aQueryResults(4)
             exit function
         else
             on error goto 0
@@ -4351,6 +4683,7 @@ class classSqliteOdbcTests
                         dim fieldCount: fieldCount = oRs.fields.count
                         if err.number <> 0 then
                             aQueryResults(3) = aQueryResults(3) & "0: " & err.number & ":" & err.description & "|"
+                            aQueryResults(4) = Timer - aQueryResults(4)
                             exit function
                         end if
                         on error goto 0
@@ -4406,17 +4739,20 @@ class classSqliteOdbcTests
                     oRs.close
                     set oRs = nothing
                     query2csv = 0
+                    aQueryResults(4) = Timer - aQueryResults(4)
                     exit function
                 end if
             else
                 'aQueryResults(3) = "RS is not open " & oRs.state & "|"
                 query2csv = 0
                 set oRs = nothing
+                aQueryResults(4) = Timer - aQueryResults(4)
                 exit function
             end if
         end if
         oRs.close
         set oRs = nothing
+        aQueryResults(4) = Timer - aQueryResults(4)
     end function
 
     '********************************************
@@ -4449,7 +4785,7 @@ class classSqliteOdbcTests
         ' log query2csv() result contained in aQueryResults to console
         if r >= 0 then
             log "QUERY  " & aQueryResults(0)
-            log "returned " & (r) & " rows"
+            log "returned " & (r) & " rows in " & round(aQueryResults(4),3) & " seconds"
             if len(aQueryResults(3)) > 0  then log aQueryResults(3)
             log aQueryResults(1)
             dim vKey: for each vKey in aQueryResults(2)
