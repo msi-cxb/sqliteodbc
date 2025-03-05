@@ -291,7 +291,7 @@ class classSqliteOdbcTests
         log ""
 
         bVerboseOutput = false
-        dim runTests: runTests = false
+        dim runTests: runTests = true
         
         if objFSO.FolderExists(strFolder & "\testDBs") = false then
             objFSO.CreateFolder(strFolder & "\testDBs")
@@ -303,7 +303,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-
+        
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -500,7 +500,7 @@ class classSqliteOdbcTests
         log "FINISHED!"
         on error goto 0
     end function
-
+    
     '********************************************
     public function sqlite_version
         dim oShell: Set oShell = WScript.CreateObject("WScript.Shell")
@@ -1649,7 +1649,20 @@ class classSqliteOdbcTests
         if aQueryResults(2)(0) <> """118C9A7D89C7A5A4A672E28C5CB72A4CF434A7D3A3DD0FA73D57CAF6""" then retValue = retValue + 1
         
         dim sha_result: sha_result = aQueryResults(2)(0)
-        log "sha_result " & result & " " & sha_result
+        ' log "sha_result " & result & " " & sha_result
+        
+        ' query returns a result with name and hash for all tables in the database
+        q = _
+            "SELECT tbl_name, " & _
+            "hex(sha3_query('SELECT * FROM ""' || tbl_name || '"" NOT INDEXED',224 )) as hash " & _
+            "from (select tbl_name from sqlite_master where type = 'table');"
+        result = query2csv(q)
+        if result <> 5 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """people"",""118C9A7D89C7A5A4A672E28C5CB72A4CF434A7D3A3DD0FA73D57CAF6""" then retValue = retValue + 1
+        if aQueryResults(2)(1) <> """t0"",""E2A33D7E61283347F0DE3C8E178520D1D0B5893F47249B426B66B2CA""" then retValue = retValue + 1
+        if aQueryResults(2)(2) <> """t1"",""1D673943933A1C16B27B6A7DBD306C8842963B3412080FFFA3F6E936""" then retValue = retValue + 1
+        if aQueryResults(2)(3) <> """t2"",""1E9170174B2516A6191AF8BB38AFAE21074FAB21C62EB9694D6C3825""" then retValue = retValue + 1
+        if aQueryResults(2)(4) <> """t3"",""7903568E36C67E7C54E2C37734B3C7977C6EA4CA13E3FA0BC0AA10D6""" then retValue = retValue + 1
         
         closedb
         
@@ -2997,7 +3010,7 @@ class classSqliteOdbcTests
                 dbSqlite3 = oFile.path
                 log dbSqlite3
                 opendb "SQL3 "
-                log query(" select name from sqlite_master where type = 'table';")
+                log query("select name from sqlite_master where type = 'table';")
                 closedb
             end if
         next
