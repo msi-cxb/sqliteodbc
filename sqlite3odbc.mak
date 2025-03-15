@@ -134,6 +134,7 @@ extensions: bfsvtab.dll \
         sqlfcmp.dll \
         totype.dll \
         uuid.dll \
+        uint.dll \
         wholenumber.dll \
         vfsstat.dll
 
@@ -265,6 +266,9 @@ crypto.dll:	crypto.obj md5.obj shaone.obj shatwo.obj
 bfsvtab.dll:	bfsvtab.obj
 		$(LN) $(DLLLFLAGS) bfsvtab.obj -out:$@ $(DLLLIBS) 
         
+uint.dll:	uint.obj
+		$(LN) $(DLLLFLAGS) uint.obj -out:$@ $(DLLLIBS) 
+
 sqlite3.exe: shell.c sqlite3.c
     $(CC) $(CFLAGSEXE) shell.c sqlite3.c $(DLLLIBS) -Fesqlite3.exe \
     -DSQLITE_THREADSAFE=0 \

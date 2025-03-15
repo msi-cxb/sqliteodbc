@@ -230,6 +230,7 @@ REM ***************************************************
     xcopy /Q /Y totype.dll %installDir% 1>nul
     xcopy /Q /Y uuid.dll %installDir% 1>nul
     xcopy /Q /Y vfsstat.dll %installDir% 1>nul
+    xcopy /Q /Y uint.dll %installDir% 1>nul
     xcopy /Q /Y wholenumber.dll %installDir% 1>nul
     xcopy /Q /Y sqldiff.exe %installDir% 1>nul
     xcopy /Q /Y sqlite3.exe %installDir% 1>nul

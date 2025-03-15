@@ -303,7 +303,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-        
+
         ' sqlite features
         if runTests then
             longSqlStringReturn
@@ -414,6 +414,9 @@ class classSqliteOdbcTests
         if runTests then
             dbSqlite3 = strFolder & "\testDBs\csv" & sBitPath & ".sqlite3"
             sqlite_extension_functions_csv
+            If Err.Number <> 0 Then wscript.quit -1
+
+            sqlite_extension_uint
             If Err.Number <> 0 Then wscript.quit -1
 
             sqlite_extension_functions_tests
@@ -1936,6 +1939,127 @@ class classSqliteOdbcTests
         query("drop table if exists t1.temp;")
 
         sqlite3_extension_functions = retValue
+    end function
+
+    '********************************************
+    public function sqlite_extension_uint
+        ' https://sqlite.org/uintcseq.html
+        dim s: s = ""
+        dim retValue: retValue = 0
+       
+        log "******************************************************"
+        log "sqlite_extension_uint"
+        log ""
+        opendb "MEM  "
+        
+        query2csv("SELECT load_extension('.\install\" & sBitPath & "\uint.dll') as loaded")
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+
+        s = _
+            "WITH nodes(n) AS ( VALUES " & _
+            "    ('node_50'), " & _
+            "    ('abc0010xyy'), " & _
+            "    ('node_100'), " & _
+            "    ('123456'), " & _
+            "    ('abc10xzz'), " & _
+            "    ('node_5'), " & _
+            "    ('abc674xyz'), " & _
+            "    ('0000123457'), " & _
+            "    ('abc0000000010xyz'), " & _
+            "    ('node_500'), " & _
+            "    ('abc87xyz'), " & _
+            "    ('node_10'), " & _
+            "    ('node_1'), " & _
+            "    ('abc9xyz') " & _
+            ") " & _
+            "SELECT  " & _
+            "    n " & _
+            "FROM nodes " & _
+            "ORDER BY n "
+        
+        ' binary
+        query2csv(s)
+        
+        if aQueryResults(2).count <> 14 then retValue = retValue+1
+        if aQueryResults(2)(0) <> """0000123457""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """123456""" then retValue = retValue+1
+        if aQueryResults(2)(2) <> """abc0000000010xyz""" then retValue = retValue+1
+        if aQueryResults(2)(3) <> """abc0010xyy""" then retValue = retValue+1
+        if aQueryResults(2)(4) <> """abc10xzz""" then retValue = retValue+1
+        if aQueryResults(2)(5) <> """abc674xyz""" then retValue = retValue+1
+        if aQueryResults(2)(6) <> """abc87xyz""" then retValue = retValue+1
+        if aQueryResults(2)(7) <> """abc9xyz""" then retValue = retValue+1
+        if aQueryResults(2)(8) <> """node_1""" then retValue = retValue+1
+        if aQueryResults(2)(9) <> """node_10""" then retValue = retValue+1
+        if aQueryResults(2)(10) <> """node_100""" then retValue = retValue+1
+        if aQueryResults(2)(11) <> """node_5""" then retValue = retValue+1
+        if aQueryResults(2)(12) <> """node_50""" then retValue = retValue+1
+        if aQueryResults(2)(13) <> """node_500""" then retValue = retValue+1
+
+        ' uint
+        query2csv(s & " collate uint")
+        
+        if aQueryResults(2).count <> 14 then retValue = retValue+1
+        if aQueryResults(2)(0) <> """123456""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """0000123457""" then retValue = retValue+1
+        if aQueryResults(2)(2) <> """abc9xyz""" then retValue = retValue+1
+        if aQueryResults(2)(3) <> """abc0010xyy""" then retValue = retValue+1
+        if aQueryResults(2)(4) <> """abc0000000010xyz""" then retValue = retValue+1
+        if aQueryResults(2)(5) <> """abc10xzz""" then retValue = retValue+1
+        if aQueryResults(2)(6) <> """abc87xyz""" then retValue = retValue+1
+        if aQueryResults(2)(7) <> """abc674xyz""" then retValue = retValue+1
+        if aQueryResults(2)(8) <> """node_1""" then retValue = retValue+1
+        if aQueryResults(2)(9) <> """node_5""" then retValue = retValue+1
+        if aQueryResults(2)(10) <> """node_10""" then retValue = retValue+1
+        if aQueryResults(2)(11) <> """node_50""" then retValue = retValue+1
+        if aQueryResults(2)(12) <> """node_100""" then retValue = retValue+1
+        if aQueryResults(2)(13) <> """node_500""" then retValue = retValue+1
+
+        closedb
+
+        opendb "SQL3-uint"
+        
+        ' binary
+        query2csv(s)
+        
+        if aQueryResults(2).count <> 14 then retValue = retValue+1
+        if aQueryResults(2)(0) <> """0000123457""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """123456""" then retValue = retValue+1
+        if aQueryResults(2)(2) <> """abc0000000010xyz""" then retValue = retValue+1
+        if aQueryResults(2)(3) <> """abc0010xyy""" then retValue = retValue+1
+        if aQueryResults(2)(4) <> """abc10xzz""" then retValue = retValue+1
+        if aQueryResults(2)(5) <> """abc674xyz""" then retValue = retValue+1
+        if aQueryResults(2)(6) <> """abc87xyz""" then retValue = retValue+1
+        if aQueryResults(2)(7) <> """abc9xyz""" then retValue = retValue+1
+        if aQueryResults(2)(8) <> """node_1""" then retValue = retValue+1
+        if aQueryResults(2)(9) <> """node_10""" then retValue = retValue+1
+        if aQueryResults(2)(10) <> """node_100""" then retValue = retValue+1
+        if aQueryResults(2)(11) <> """node_5""" then retValue = retValue+1
+        if aQueryResults(2)(12) <> """node_50""" then retValue = retValue+1
+        if aQueryResults(2)(13) <> """node_500""" then retValue = retValue+1
+        
+        ' uint
+        query2csv(s & " collate uint")
+        
+        if aQueryResults(2).count <> 14 then retValue = retValue+1
+        if aQueryResults(2)(0) <> """123456""" then retValue = retValue+1
+        if aQueryResults(2)(1) <> """0000123457""" then retValue = retValue+1
+        if aQueryResults(2)(2) <> """abc9xyz""" then retValue = retValue+1
+        if aQueryResults(2)(3) <> """abc0010xyy""" then retValue = retValue+1
+        if aQueryResults(2)(4) <> """abc0000000010xyz""" then retValue = retValue+1
+        if aQueryResults(2)(5) <> """abc10xzz""" then retValue = retValue+1
+        if aQueryResults(2)(6) <> """abc87xyz""" then retValue = retValue+1
+        if aQueryResults(2)(7) <> """abc674xyz""" then retValue = retValue+1
+        if aQueryResults(2)(8) <> """node_1""" then retValue = retValue+1
+        if aQueryResults(2)(9) <> """node_5""" then retValue = retValue+1
+        if aQueryResults(2)(10) <> """node_10""" then retValue = retValue+1
+        if aQueryResults(2)(11) <> """node_50""" then retValue = retValue+1
+        if aQueryResults(2)(12) <> """node_100""" then retValue = retValue+1
+        if aQueryResults(2)(13) <> """node_500""" then retValue = retValue+1
+
+        closedb
+
+        if retValue <> 0 then err.raise 1
     end function
 
     '********************************************
@@ -4486,6 +4610,8 @@ class classSqliteOdbcTests
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\fileio.dll;"
             case "SQL3-sqlfcmp"
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\sqlfcmp.dll;"
+            case "SQL3-uint"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\uint.dll;"
         end select
 
         if bVerboseOutput then log p & " " & sConnStr & vbcrlf
