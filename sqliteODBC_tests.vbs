@@ -303,9 +303,12 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-
+        
         ' sqlite features
         if runTests then
+            sqlite3_datetime_validation
+            If Err.Number <> 0 Then wscript.quit -1
+
             longSqlStringReturn
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -513,6 +516,84 @@ class classSqliteOdbcTests
         log "sqlite_version arch = " & proc_arch
         opendb "MEM  "
         log query("SELECT sqlite_version() as vers, sqlite_source_id() as srcId;")
+        closedb
+    end function
+
+    '********************************************
+    public function sqlite3_datetime_validation
+        'https://sqlite.org/forum/forumpost/6e9d3c43c6
+        log "sqlite3_datetime_validation"
+        dim retValue: retValue = 0
+        dim sql
+        opendb "MEM  "
+        
+        query2csv("drop table if exists d;")
+
+        'table with day that validates entry
+        query2csv("create table d ( day   date not null check (strftime('%F', unixepoch(day), 'unixepoch') = day));")
+
+        query2csv("insert into d values ('2025-02-28');")
+        if len(aQueryResults(3)) > 0 then retValue = retValue+1
+        
+        ' 2025 is NOT a leap year...so constraint failure
+        query2csv("insert into d values ('2025-02-29');")
+        if instr(aQueryResults(3),"CHECK constraint failed") <= 0 then retValue = retValue+1
+        
+        query2csv("insert into d values ('2024-02-29');")
+        if len(aQueryResults(3)) > 0 then retValue = retValue+1
+
+        query2csv("delete from d;")
+        if len(aQueryResults(3)) > 0 then retValue = retValue+1
+
+        ' insert two years of valid dates into table d, check that not failures occur
+        ' use UNION ALL if duplicate/repeated dates are ok
+        sql = _
+            "insert into d(day) " & _
+            "WITH dates AS ( " & _
+                "SELECT DATE(JULIANDAY('2024-01-01')) as Date,1 as Period " & _
+                "UNION " & _
+                "SELECT DATE(JULIANDAY(Date)+1) as date, Period+1 FROM dates WHERE DATE(JULIANDAY(Date)+1) <= DATE(JULIANDAY('2025-12-31')) " & _
+            ") SELECT date FROM dates ORDER BY Date;"
+        query2csv(sql)
+        if len(aQueryResults(2)(1)) > 0 then retValue = retValue+1
+
+        ' output first and last day of each month
+        ' note 2024 is a leap year so last day of Feb 2024 is 2024-02-29
+        query2csv( _
+            "select day as firstOfMonth, " & _
+            "date(day,'start of month','+1 month','-1 day') as lastOfMonth " & _
+            "from d where strftime('%d', day) = '01';" _
+        )
+        if aQueryResults(2)(1) <> "2/1/2024,""2024-02-29""" then retValue = retValue+1
+
+        closedb
+        if retValue > 0 then err.raise retValue
+    end function
+
+    '********************************************
+    public function sqlite3_recursiveCTE
+        dim retValue: retValue = 0
+        dim result: result = 0
+        opendb "SQL3 "
+        
+        logResult query2csv("drop table if exists people;")
+        if result = -1 then retValue = retValue + 1
+        
+        logResult query2csv("create table people (id INTEGER, income REAL, tax_rate REAL);")
+        if result = -1 then retValue = retValue + 1
+        
+        dim q: q = _
+            "WITH RECURSIVE person(x) AS ( " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person where x < 1000000 " & _
+            ") " & _
+            "INSERT INTO people ( id, income, tax_rate) " & _
+            "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
+            
+        logResult query2csv("EXPLAIN  QUERY PLAN " & q)
+        logResult query2csv(q)
+        if result = -1 then retValue = retValue + 1
+        logResult query2csv("select count(1) from people;")
+        if aQueryResults(2)(0) <> 1000000 then retValue = retValue + 1
         closedb
     end function
 
@@ -1612,7 +1693,7 @@ class classSqliteOdbcTests
         
         dim q: q = _
             "WITH RECURSIVE person(x) AS ( " & _
-            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 1000000 " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person where x < 1000000 " & _
             ") " & _
             "INSERT INTO people ( id, income, tax_rate) " & _
             "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
@@ -2339,7 +2420,7 @@ class classSqliteOdbcTests
         ' recursive CTE to create table
         dim q: q = _
             "WITH RECURSIVE person(x) AS ( " & _
-            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 100000 " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person where x < 100000 " & _
             ") " & _
             "INSERT INTO people ( id, income, tax_rate) " & _
             "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
@@ -4079,7 +4160,7 @@ class classSqliteOdbcTests
         if result = -1 then retValue = retValue + 1
         dim q: q = _
             "WITH RECURSIVE person(x) AS ( " & _
-            "SELECT 1 UNION ALL SELECT x+1 FROM person LIMIT 1000 " & _
+            "SELECT 1 UNION ALL SELECT x+1 FROM person where x < 1000 " & _
             ") " & _
             "INSERT INTO people ( id, income, tax_rate) " & _
             "SELECT x, 70+mod(x,15)*3, (15.0+(mod(x,5)*0.2)+mod(x,15))/100. FROM person;"
