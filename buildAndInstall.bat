@@ -52,12 +52,19 @@ REM if errorlevel 1 (echo clean error & goto :exit)
 
 echo building...
 
-REM build driver, extension, and commandline utilities
-REM nmake -f sqlite3odbc.mak all DEBUG=1
+REM build driver, extension, and commandline utilities (this should be the default)
 nmake -f sqlite3odbc.mak all
+
+REM build just the sqlite3.exe command line executable
+REM nmake -f sqlite3odbc.mak sqlite3.exe
+
+REM build driver, extension, and commandline utilities with debug statements in the odbc driver
+REM nmake -f sqlite3odbc.mak all DEBUG=1
 
 REM build just the driver
 REM nmake -f sqlite3odbc.mak driver
+
+REM build just the extensions
 REM nmake -f sqlite3odbc.mak extensions
 
 REM CXB=1 compiles in the tracing
