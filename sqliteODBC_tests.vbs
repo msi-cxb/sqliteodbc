@@ -293,12 +293,13 @@ class classSqliteOdbcTests
         bVerboseOutput = false
         dim runTests: runTests = true
         
-        if objFSO.FolderExists(strFolder & "\testDBs") = false then
-            objFSO.CreateFolder(strFolder & "\testDBs")
+        if objFSO.FolderExists(strFolder & "\testDBs_" & sBitPath) = false then
+            objFSO.CreateFolder(strFolder & "\testDBs_" & sBitPath)
         end if
         
-        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\testfile" & sBitPath & ".sqlite3"
         log "strFolder [" & strFolder & "]"
+        log "testDBs [" & strFolder & "\testDBs_" & sBitPath & "] --> " & objFSO.FolderExists(strFolder & "\testDBs_" & sBitPath) 
         log "dbSqlite3 [" & dbSqlite3 & "]"
 
         sqlite_version
@@ -315,7 +316,7 @@ class classSqliteOdbcTests
             log dumpPragma
             If Err.Number <> 0 Then wscript.quit -1
 
-            dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\testfile" & sBitPath & ".sqlite3"
             sqlite3_BuiltIn_Tests
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -415,7 +416,7 @@ class classSqliteOdbcTests
 
         ' extension tests
         if runTests then
-            dbSqlite3 = strFolder & "\testDBs\csv" & sBitPath & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\csv" & sBitPath & ".sqlite3"
             sqlite_extension_functions_csv
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -449,7 +450,7 @@ class classSqliteOdbcTests
             sqlite_extension_uuid
             If Err.Number <> 0 Then wscript.quit -1
 
-            dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\testfile" & sBitPath & ".sqlite3"
             sqlite_extension_bfsvtab
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -462,7 +463,7 @@ class classSqliteOdbcTests
             sqlite_sqlfcmp
             If Err.Number <> 0 Then wscript.quit -1
         
-            dbSqlite3 = strFolder & "\testDBs\crypto" & sBitPath & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\crypto" & sBitPath & ".sqlite3"
             sqlite_extension_crypto
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -488,7 +489,7 @@ class classSqliteOdbcTests
         if runTests then
             testDbInventory
             If Err.Number <> 0 Then wscript.quit -1
-            if objFSO.FolderExists(strFolder & "\testDBs") then objFSO.DeleteFolder(strFolder & "\testDBs")
+            if objFSO.FolderExists(strFolder & "\testDBs_" & sBitPath) then objFSO.DeleteFolder(strFolder & "\testDBs_" & sBitPath)
         end if
 
         ' can be used to create some test tables
@@ -604,7 +605,7 @@ class classSqliteOdbcTests
         dim sql
         dim i
         dim temp: temp = dbSqlite3
-        dbSqlite3 = strFolder & "\testDBs\ssb_1.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\ssb_1.sqlite3"
         If objFso.FileExists(dbSqlite3) = false Then
             log dbSqlite3 & " does not exist! Skipping test sqlite_ssb"
             exit function
@@ -1296,7 +1297,7 @@ class classSqliteOdbcTests
         REM │ *        │ randomness   │ 1     │
         REM └──────────┴──────────────┴───────┘
 
-        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\testfile" & sBitPath & ".sqlite3"
         opendb "SQL3 "
         logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\vfsstat.dll') as ext_loaded")
         logResult query2csv("DROP TABLE IF EXISTS t1;")
@@ -1678,7 +1679,7 @@ class classSqliteOdbcTests
         ' The hash is computed over the database content, not its representation on disk. 
         ' This means, for example, that a VACUUM or similar data-preserving transformation does not change the hash.
         ' recursive CTE to create table with 1 million rows then hash a column/table with SHA3 functions
-        dbSqlite3 = strFolder & "\testDBs\sha" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\sha" & sBitPath & ".sqlite3"
         if objFSO.FileExists(dbSqlite3) then 
             objFSO.DeleteFile(dbSqlite3)
         end if
@@ -1751,9 +1752,9 @@ class classSqliteOdbcTests
         closedb
         
         ' make a copy of the database
-        log "copy " & strFolder & "\testDBs\sha" & sBitPath & ".sqlite3" & " to " & strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
-        helper_copy_file strFolder & "\testDBs\sha" & sBitPath & ".sqlite3", strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
-        dbSqlite3 = strFolder & "\testDBs\sha_orig" & sBitPath & ".sqlite3"
+        log "copy " & strFolder & "\testDBs_" & sBitPath & "\sha" & sBitPath & ".sqlite3" & " to " & strFolder & "\testDBs_" & sBitPath & "\sha_orig" & sBitPath & ".sqlite3"
+        helper_copy_file strFolder & "\testDBs_" & sBitPath & "\sha" & sBitPath & ".sqlite3", strFolder & "\testDBs_" & sBitPath & "\sha_orig" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\sha_orig" & sBitPath & ".sqlite3"
 
         ' open the database copy
         opendb "SQL3-sha"
@@ -1766,7 +1767,7 @@ class classSqliteOdbcTests
         
         closedb
         
-        dbSqlite3 = strFolder & "\testDBs\testfile" & sBitPath & ".sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\testfile" & sBitPath & ".sqlite3"
         
         if retValue > 0 then err.raise retValue
     end function
@@ -2855,7 +2856,7 @@ class classSqliteOdbcTests
         log ""
         
         test 10,100,"TEXT",100,true,"journal=OFF",false,false
-        dbSqlite3 = ".\testDBs\SQL3_True_10_100_100_T_OFF_64.sqlite3"
+        dbSqlite3 = ".\testDBs_" & sBitPath & "\SQL3_True_10_100_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update test_table set myField_1 = NULL where id <= 5")
         sSql = replace(sFileContentsTemplate,"_T_","test_table")
@@ -2869,7 +2870,7 @@ class classSqliteOdbcTests
         log ""
         
         test 10,1,"TEXT",100,true,"journal=OFF",false,false
-        dbSqlite3 = ".\testDBs\SQL3_True_10_1_100_T_OFF_64.sqlite3"
+        dbSqlite3 = ".\testDBs_" & sBitPath & "\SQL3_True_10_1_100_T_OFF_64.sqlite3"
         opendb "SQL3 "
         log query("update [test_table] set myField_1 = null where id <= 5")
         sSql = replace(sFileContentsTemplate,"_T_","test_table")
@@ -3206,14 +3207,14 @@ class classSqliteOdbcTests
     '********************************************
     public function testDbInventory
         ' loop through a folder of sqlite database files 
-        dim sPath: sPath = objFSO.GetAbsolutePathName(".\testDBs")
+        dim sPath: sPath = objFSO.GetAbsolutePathName(".\testDBs_" & sBitPath)
         dim oFolder: set oFolder = objFSO.GetFolder(sPath)
         log "path: " & oFolder.path & vbcrlf
         log "files:"
         dim oFile: for each oFile in oFolder.Files
             if objFSO.GetExtensionName(oFile.Path) = "sqlite3" then
                 dbSqlite3 = oFile.path
-                log dbSqlite3
+                log "sqlite3 file: " & dbSqlite3
                 opendb "SQL3 "
                 log query("select name from sqlite_master where type = 'table';")
                 closedb
@@ -4524,7 +4525,7 @@ class classSqliteOdbcTests
 
         if s = false then
         
-            dbSqlite3 = strFolder & "\testDBs\" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
+            dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\" & pk & "_" & r & "_" & c & "_" & ipt & "_" & left(t,1) & "_" & replace(replace(pragma,"-","N"),",","_") & iBitness & ".sqlite3"
             if objFSO.FileExists(dbSqlite3) then objFSO.DeleteFile(dbSqlite3)
             opendb "SQL3 "
             for each aaa in aa
