@@ -5,8 +5,8 @@ Original Christian Werner/SoftACE README is [here](https://github.com/msi-cxb/sq
 This is a fork of https://github.com/softace/sqliteodbc with modifications to build with Visual Studio 2015/2017/2019/2022 for both 32 and 64 bit. Also adds CI workflow that builds the ODBC driver and sqllogictest and runs the full set of tests. 
 
 This is the current version of SQLite3 used in the driver (values pulled automatically from sqlite3.c):
-- SQLITE_VERSION: 3.51.1
-- SQLITE_SOURCE_ID: 2025-11-28 17:28:25 281fc0e9afc38674b9b0991943b9e9d1e64c6cbdb133d35f6f5c87ff6af38a88
+- SQLITE_VERSION: 3.51.2
+- SQLITE_SOURCE_ID: 2026-01-09 17:27:48 b270f8339eb13b504d0b2ba154ebca966b7dde08e40c3ed7d559749818cb2075
 
 Features
 - Builds with Visual Studio (2015/2017/2019/2022) using nmake
