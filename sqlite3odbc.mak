@@ -136,7 +136,8 @@ extensions: bfsvtab.dll \
         uuid.dll \
         uint.dll \
         wholenumber.dll \
-        vfsstat.dll
+        vfsstat.dll \
+        path.dll
 
 # needs to be run as administrator
 install: clean SQLiteODBCInstaller.exe sqlite3odbc.dll
@@ -268,6 +269,9 @@ bfsvtab.dll:	bfsvtab.obj
         
 uint.dll:	uint.obj
 		$(LN) $(DLLLFLAGS) uint.obj -out:$@ $(DLLLIBS) 
+
+path.dll: sqlite-path.obj cwalk.obj
+		$(LN) $(DLLLFLAGS) sqlite-path.obj cwalk.obj -out:$@ $(DLLLIBS) 
 
 sqlite3.exe: shell.c sqlite3.c
     $(CC) $(CFLAGSEXE) shell.c sqlite3.c $(DLLLIBS) -Fesqlite3.exe \

@@ -420,6 +420,9 @@ class classSqliteOdbcTests
             sqlite_extension_functions_csv
             If Err.Number <> 0 Then wscript.quit -1
 
+            sqlite_extension_functions_path
+            If Err.Number <> 0 Then wscript.quit -1
+
             sqlite_extension_uint
             If Err.Number <> 0 Then wscript.quit -1
 
@@ -2141,6 +2144,68 @@ class classSqliteOdbcTests
 
         closedb
 
+        if retValue <> 0 then err.raise 1
+    end function
+
+    '********************************************
+    public function sqlite_extension_functions_path
+        dim s: s = ""
+        dim retValue: retValue = 0
+       
+        log "******************************************************"
+        log "sqlite_extension_functions_path"
+        opendb "SQL3 "
+        log "load_extension(.\install\" & sBitPath & "\path.dll) "
+        log query("SELECT load_extension('.\install\" & sBitPath & "\path.dll') as loaded")
+
+        logResult query2csv(" SELECT path_dirname('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """c:\foo\""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT path_basename('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """bar.txt""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT path_extension('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """.txt""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT * from path_parts('c:\foo\bar.txt');")
+        if aQueryResults(2)(0) <> """normal"",""foo""" then retValue = retValue + 1
+        if aQueryResults(2)(1) <> """normal"",""bar.txt""" then retValue = retValue + 1
+        
+        closedb
+        
+        log "******************************************************"
+        opendb "SQL3-LoadExt-Path-fileio"
+        log "SQL3-LoadExt-Path-fileio"
+        
+        logResult query2csv(" SELECT path_dirname('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """c:\foo\""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT path_basename('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """bar.txt""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT path_extension('c:\foo\bar.txt') as val;")
+        if aQueryResults(2)(0) <> """.txt""" then retValue = retValue + 1
+        
+        logResult query2csv(" SELECT * from path_parts('c:\foo\bar.txt');")
+        if aQueryResults(2)(0) <> """normal"",""foo""" then retValue = retValue + 1
+        if aQueryResults(2)(1) <> """normal"",""bar.txt""" then retValue = retValue + 1
+
+        ' this requires fileio extension which must be done via connection string
+        dim q: q = _
+            "select " & _
+                "path_extension(name), " & _
+                "count(*), " & _
+                "printf('%.*c', count(*), '*') as bar " & _
+            "from fsdir('.') " & _
+                "where path_extension(name) is not null " & _
+                "group by 1 " & _
+                "order by 2 desc " & _
+                "limit 6;"
+        logResult query2csv(q)
+        if aQueryResults(2).count <> 6 then retValue = retValue + 1
+
+        closedb
+        
         if retValue <> 0 then err.raise 1
     end function
 
@@ -4662,6 +4727,8 @@ class classSqliteOdbcTests
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=:memory:;"
             case "SQL3-crypto"
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\crypto.dll;"
+            case "SQL3-LoadExt-Path-fileio"
+                sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\path.dll,.\install\" & sBitPath & "\fileio.dll;"
             case "SQL3-LoadExt-Csv"
                 sConnStr = "DRIVER=SQLite3 ODBC Driver;Database=" & dbSqlite3 & ";LoadExt=.\install\" & sBitPath & "\csv.dll;"
             case "SQL3-LoadExt-ExtFun"

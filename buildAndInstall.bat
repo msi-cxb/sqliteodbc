@@ -230,6 +230,7 @@ REM ***************************************************
     xcopy /Q /Y ieee754.dll %installDir% 1>nul
     xcopy /Q /Y inst.exe %installDir% 1>nul
     xcopy /Q /Y regexp.dll %installDir% 1>nul
+    xcopy /Q /Y path.dll %installDir% 1>nul
     xcopy /Q /Y series.dll %installDir% 1>nul
     xcopy /Q /Y sha1.dll %installDir% 1>nul
     xcopy /Q /Y shathree.dll %installDir% 1>nul
