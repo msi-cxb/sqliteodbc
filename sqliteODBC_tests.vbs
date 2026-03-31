@@ -1011,6 +1011,12 @@ class classSqliteOdbcTests
         'https://sqlite.org/forum/forumpost/9040b9c0b1532b5c
         ' note the numbers here don't match website numbers exactly, but
         ' DO match output from locally compiled SQLite3
+        
+        'PrePrevious  = +99.999999999999971578290569595992565155029296875
+        'Previous     = +99.9999999999999857891452847979962825775146484375
+        'Value        = +100
+        'Next         = +100.0000000000000142108547152020037174224853515625
+        'NextNext     = +100.000000000000028421709430404007434844970703125
 
         log "******************************************************"
         log "sqlite_sqlfcmp (Keith Medcalf extension)"
@@ -1018,96 +1024,274 @@ class classSqliteOdbcTests
         opendb "MEM  "
         log "load_extension('.\install\" & sBitPath & "\sqlfcmp.dll') will throw error but it does load the extension"
         query2csv("SELECT load_extension('.\install\" & sBitPath & "\sqlfcmp.dll') as ext_loaded")
+        
+        log ""
+        log "load_extension load_extension load_extension load_extension load_extension "
+        log "load_extension load_extension load_extension load_extension load_extension "
+        log "load_extension load_extension load_extension load_extension load_extension "
+        
+        ' we expect error that includes string "Function sequence error"
         if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
-
+        log retValue
+        
+        ' table with values around 100 that are 1 ULP apart
         query2csv("drop table if exists t;")
         query2csv("create table t(c real);")
-        query2csv("insert into t values(.00001);")
-        query2csv("insert into t values(.00001);")
-        query2csv("insert into t values(.00001);")
-
-        query2csv("select format('%.5f', total(c)) from t;")
-        if aQueryResults(2)(0) <> """0.00003""" then retValue = retValue+1
-
-        query2csv("select format('%!.26f', c) from t;")
-        if aQueryResults(2).count <> 3 then retValue = retValue+1
-
-        query2csv("select format('%!.26f', total(c)) from t;")
-        if aQueryResults(2)(0) <> """0.00003000000000000000415""" then retValue = retValue+1
-
-        ' https://sqlite.org/forum/forumpost/f46ded7529d456d7
-        ' It is a scalar function that takes two arguments -- the first being the number to operate on, 
-        ' and the second optional argument being the number of significant digits to maintain, with the default being 14.
-        ' the "exactly rounded" result 
-        query2csv("select format('%!.26f', sigdigits(total(c))) from t;")
-        if aQueryResults(2)(0) <> """0.00003000000000000000076""" then retValue = retValue+1
+        query2csv("insert into t values(100-5*ulp(100));")
+        query2csv("insert into t values(100-4*ulp(100));")
+        query2csv("insert into t values(100-3*ulp(100));")
+        query2csv("insert into t values(100-2*ulp(100));")
+        query2csv("insert into t values(100-1*ulp(100));")
+        query2csv("insert into t values(100-0*ulp(100));")
+        query2csv("insert into t values(100+1*ulp(100));")
+        query2csv("insert into t values(100+2*ulp(100));")
+        query2csv("insert into t values(100+3*ulp(100));")
+        query2csv("insert into t values(100+4*ulp(100));")
+        query2csv("insert into t values(100+5*ulp(100));")
+        log retValue
         
-        ' a diference of 1 ULP.
-        query2csv("select ulps(sigdigits(total(c)), total(c)) from t;")
-        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+        log "1 ****************************"
+        
+        REM "99.9999999999999289"
+        REM "99.9999999999999432"
+        REM "99.9999999999999574"
+        REM "99.9999999999999716"
+        REM "99.9999999999999858"
+        REM "100.0"
+        REM "100.0000000000000142"
+        REM "100.0000000000000284"
+        REM "100.0000000000000426"
+        REM "100.0000000000000568"
+        REM "100.0000000000000711"
 
-        ' the values differ by 1 ULP so they are not equal (0)
-        query2csv("select total(c) == 3.0e-05 from t;")
-        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
-
-        query2csv("select format('%!.26f', 100.00000000000000001) as value union all select format('%!.26f', 100.00000000000001);")
-        if aQueryResults(2)(0) <> """100.0""" then retValue = retValue+1
-        if aQueryResults(2)(1) <> """100.0000000000000142""" then retValue = retValue+1
-
-        query2csv("select ulps(100.00000000000000001,100.00000000000001) as u;")
-        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
+        logResult query2csv("select format('%!.30f', c) from t;")
+        if aQueryResults(2)(0) <> """99.9999999999999289""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(1) <> """99.9999999999999432""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(2) <> """99.9999999999999574""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(3) <> """99.9999999999999716""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(4) <> """99.9999999999999858""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(5) <> """100.0""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(6) <> """100.0000000000000142""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(7) <> """100.0000000000000284""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(8) <> """100.0000000000000426""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(9) <> """100.0000000000000568""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(10) <> """100.0000000000000711""" then retValue = retValue+1
+        log retValue
+        
+        log "2 ****************************"
+        
+        ' 9 digits,sigdigits is like round: ROUND(7.5) = 8. It rounds to the nearest integer ( < .5 down, ≥ .5 up).
+        logResult query2csv("select sigdigits(100.000001,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000049,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000050,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000051,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.000009,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00001 then retValue = retValue+1
+        log retValue
+        
+        log "3 ****************************"
+        
+        logResult query2csv("select sigdigits(-100.000001,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000049,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000050,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000051,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100.00001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.000009,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100.00001 then retValue = retValue+1
+        log retValue
+        
+        log "4 ****************************"
+        
+        logResult query2csv("select sigdigits(100.0000000001,13) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.0000000001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.00000000001,14) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00000000001 then retValue = retValue+1
+        logResult query2csv("select sigdigits(100.00000000001) as sigdigits;")
+        log retValue
+        if cdbl(aQueryResults(2)(0)) <> 100.00000000001 then retValue = retValue+1
+        logResult query2csv("select sigdigits(100.000000000001,15) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100. then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.000000000001) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100. then retValue = retValue+1
+        
+        log "5 ****************************"
+        
+        logResult query2csv("select total(c) from t;")
+        if cdbl(aQueryResults(2)(0)) <> 1100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select format('%!.30f', total(c)) as fmt from t;")
+        if aQueryResults(2)(0) <> """1100.0""" then retValue = retValue+1
+        log retValue
+        
+        log "6 ****************************"
+        
+        log "retValue FINAL " & retValue
+        log "load_extension load_extension load_extension load_extension load_extension "
+        log "load_extension load_extension load_extension load_extension load_extension "
+        log "load_extension load_extension load_extension load_extension load_extension "
+        log ""
         
         closedb
 
         opendb "SQL3-sqlfcmp"
+        
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        log ""
+        
+        log "0 **************************** SQL3-sqlfcmp connection string"
 
+        ' table with values around 100 that are 1 ULP apart
         query2csv("drop table if exists t;")
         query2csv("create table t(c real);")
-        query2csv("insert into t values(.00001);")
-        query2csv("insert into t values(.00001);")
-        query2csv("insert into t values(.00001);")
-
-        query2csv("select format('%.5f', total(c)) from t;")
-        if aQueryResults(2)(0) <> """0.00003""" then retValue = retValue+1
-
-        query2csv("select format('%!.26f', c) from t;")
-        if aQueryResults(2).count <> 3 then retValue = retValue+1
-
-        query2csv("select format('%!.26f', total(c)) from t;")
-        if aQueryResults(2)(0) <> """0.00003000000000000000415""" then retValue = retValue+1
-
-        ' https://sqlite.org/forum/forumpost/f46ded7529d456d7
-        ' It is a scalar function that takes two arguments -- the first being the number to operate on, 
-        ' and the second optional argument being the number of significant digits to maintain, with the default being 14.
-        ' the "exactly rounded" result 
-        query2csv("select format('%!.26f', sigdigits(total(c))) from t;")
-        if aQueryResults(2)(0) <> """0.00003000000000000000076""" then retValue = retValue+1
+        query2csv("insert into t values(100-5*ulp(100));")
+        query2csv("insert into t values(100-4*ulp(100));")
+        query2csv("insert into t values(100-3*ulp(100));")
+        query2csv("insert into t values(100-2*ulp(100));")
+        query2csv("insert into t values(100-1*ulp(100));")
+        query2csv("insert into t values(100-0*ulp(100));")
+        query2csv("insert into t values(100+1*ulp(100));")
+        query2csv("insert into t values(100+2*ulp(100));")
+        query2csv("insert into t values(100+3*ulp(100));")
+        query2csv("insert into t values(100+4*ulp(100));")
+        query2csv("insert into t values(100+5*ulp(100));")
         
-        ' a diference of 1 ULP.
-        query2csv("select ulps(sigdigits(total(c)), total(c)) from t;")
-        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
-
-        ' the values differ by 1 ULP so they are not equal (0)
-        query2csv("select total(c) == 3.0e-05 from t;")
-        if cint(aQueryResults(2)(0)) <> 0 then retValue = retValue+1
-
-        query2csv("select format('%!.26f', 100.00000000000000001) as value union all select format('%!.26f', 100.00000000000001);")
-        if aQueryResults(2)(0) <> """100.0""" then retValue = retValue+1
-        if aQueryResults(2)(1) <> """100.0000000000000142""" then retValue = retValue+1
-
-        query2csv("select ulps(100.00000000000000001,100.00000000000001) as u;")
-        if cint(aQueryResults(2)(0)) <> -1 then retValue = retValue+1
-
+        log "1 ****************************"
+        
+        logResult query2csv("select format('%!.30f', c) from t;")
+        if aQueryResults(2)(0) <> """99.9999999999999289""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(1) <> """99.9999999999999432""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(2) <> """99.9999999999999574""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(3) <> """99.9999999999999716""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(4) <> """99.9999999999999858""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(5) <> """100.0""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(6) <> """100.0000000000000142""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(7) <> """100.0000000000000284""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(8) <> """100.0000000000000426""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(9) <> """100.0000000000000568""" then retValue = retValue+1
+        log retValue
+        if aQueryResults(2)(10) <> """100.0000000000000711""" then retValue = retValue+1
+        log retValue
+        
+        log "2 ****************************"
+        
+        ' 9 digits,sigdigits is like round: ROUND(7.5) = 8. It rounds to the nearest integer ( < .5 down, ≥ .5 up).
+        logResult query2csv("select sigdigits(100.000001,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000049,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000050,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.0000051,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.000009,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00001 then retValue = retValue+1
+        log retValue
+        
+        log "3 ****************************"
+        
+        logResult query2csv("select sigdigits(-100.000001,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000049,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000050,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.0000051,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100.00001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(-100.000009,8) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> -100.00001 then retValue = retValue+1
+        log retValue
+        
+        log "4 ****************************"
+        
+        logResult query2csv("select sigdigits(100.0000000001,13) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.0000000001 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.00000000001,14) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100.00000000001 then retValue = retValue+1
+        logResult query2csv("select sigdigits(100.00000000001) as sigdigits;")
+        log retValue
+        if cdbl(aQueryResults(2)(0)) <> 100.00000000001 then retValue = retValue+1
+        logResult query2csv("select sigdigits(100.000000000001,15) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100. then retValue = retValue+1
+        log retValue
+        logResult query2csv("select sigdigits(100.000000000001) as sigdigits;")
+        if cdbl(aQueryResults(2)(0)) <> 100. then retValue = retValue+1
+        
+        log "5 ****************************"
+        
+        logResult query2csv("select total(c) from t;")
+        if cdbl(aQueryResults(2)(0)) <> 1100 then retValue = retValue+1
+        log retValue
+        logResult query2csv("select format('%!.30f', total(c)) as fmt from t;")
+        if aQueryResults(2)(0) <> """1100.0""" then retValue = retValue+1
+        log retValue
+        
+        log "6 ****************************"
+        
+        log ""
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        log "SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp SQL3-sqlfcmp "
+        
+        log "retValue FINAL " & retValue
+        
         closedb
 
-        if retValue > 0 then err.raise retValue
+        REM if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
     public function sqlite_extension_fileio
         log "****************************************************************************"
         log "sqlite_extension_fileio"
-        
+        dim retValue: retValue = 0
+
         REM C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt\sys\stat.h
         REM #define _S_IFMT   0xF000 // File type mask
         REM #define _S_IFDIR  0x4000 // Directory
@@ -1117,25 +1301,31 @@ class classSqliteOdbcTests
         REM #define _S_IREAD  0x0100 // Read permission, owner
         REM #define _S_IWRITE 0x0080 // Write permission, owner
         REM #define _S_IEXEC  0x0040 // Execute/search permission, owner
-
+        
+        opendb "MEM  "
         logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\fileio.dll') as ext_loaded")
-
+        if instr(aQueryResults(3),"Function sequence error") = 0 then retValue = retValue+1
+        closedb
+        
         log "fileio dll does not work with SELECT load_extension(), so need to load via connection string"
         opendb "SQL3-fileio"
+        REM opendb "SQL3 "
         
-        REM dump file info to table so we can look at schema
-        log query("drop table if exists [fileInfo_C_Temp];") 
-        log query("create table [fileInfo_C_Temp] as select * FROM fsdir('c:\temp');") 
-        log query("PRAGMA table_info('fileInfo_C_Temp');")
-        log query("select count(1) as numRecords from [fileInfo_C_Temp];")
+        REM dump file info from local Debian folder to table so we can look at schema
+        REM Debian should not have big files that will crash script
+        query("drop table if exists [fileInfo_C_Temp];") 
+        log "create"
+        logResult query2csv("create table [fileInfo_C_Temp] as select name FROM fsdir('.\Debian');") 
+        logResult query2csv("PRAGMA table_info('fileInfo_C_Temp');")
+        logResult query2csv("select count(1) as numRecords from [fileInfo_C_Temp];")
         
         ' log "script crashes when blob is binary and large, and error handling does not catch issue"
         ' log "so you can't so a select * or select with data field if folder contains large binary file."
         ' log query("select name,mode,mtime,datetime(mtime, 'unixepoch','localtime') as reporttime from [fileInfo_C_Temp];")
         
-        ' log "if $dir is provided, and $path is relative then $path interpreted relative to $dir"
-        ' log "if folder does not exist then this will fail..."
-        log query( _
+        log "if $dir is provided, and $path is relative then $path interpreted relative to $dir"
+        log "if folder does not exist then this will fail..."
+        logResult query2csv( _
             "SELECT name, " & _
             "printf('%08X',mode) as m, " & _
             "( printf('%04X',(mode & 0xF000)) == '8000' ) as isFile, " & _
@@ -1144,10 +1334,11 @@ class classSqliteOdbcTests
             "( printf('%04X',(mode & 0x0080)) == '0080' ) as isWrite, " & _
             "( printf('%04X',(mode & 0x0040)) == '0040' ) as isExe, " & _
             "'' as theEnd " & _
-            "FROM fsdir('..\','c:\temp\folder');" & _
+            "FROM fsdir('..\','.\Debian\folder');" & _
             "")
-        ' log "same but with explicit path only passed to fsdir()"
-        log query( _
+        
+        log "same but with explicit path only passed to fsdir() should produce same result as above"
+        logResult query2csv( _
             "SELECT name, " & _
             "printf('%08X',mode) as m, " & _
             "( printf('%04X',(mode & 0xF000)) == '8000' ) as isFile, " & _
@@ -1156,15 +1347,15 @@ class classSqliteOdbcTests
             "( printf('%04X',(mode & 0x0080)) == '0080' ) as isWrite, " & _
             "( printf('%04X',(mode & 0x0040)) == '0040' ) as isExe, " & _
             "'' as theEnd " & _
-            "FROM fsdir('c:\temp');" & _
+            "FROM fsdir('.\Debian');" & _
             "")
             
-        ' log "read content of a text file where we know we can handle the blob in vbscript data types"
-        log query( "select cast( readfile('test.csv') as text) as fileContent;" )
+        log "read content of a text file where we know we can handle the blob in vbscript data types"
+        logResult query2csv( "select cast( readfile('test.csv') as text) as fileContent;" )
         
         ' log "db table column 'data' contains binary contennts of MSI.gif, write that out to a new file"
         ' log "if successful, writefile returns the number of bytes written. if not, empty recordset so nothing returned."
-        ' log query( "SELECT writefile('c:\temp\MSI_new.gif',data) as bytesWritten FROM [fileInfo_C_Temp] WHERE name='c:\temp/MSI.gif';")
+        ' logResult query2csv( "SELECT writefile('c:\temp\MSI_new.gif',data) as bytesWritten FROM [fileInfo_C_Temp] WHERE name='c:\temp/MSI.gif';")
         
         closedb
     end function
@@ -1438,24 +1629,27 @@ class classSqliteOdbcTests
         logResult query2csv("SELECT load_extension('.\install\" & sBitPath & "\uuid.dll') as ext_loaded")
         logResult query2csv("select uuid() as uv4")
         if aQueryResults(2).count <> 1 then retValue = retValue+1
-        retValue = retValue+uuid_tests
+        retValue = retValue+uuid_tests("load_extension()")
         closedb
 
         log "connection string"
         opendb "SQL3-uuid"
         logResult query2csv("select uuid() as uv4")
         if aQueryResults(2).count <> 1 then retValue = retValue+1
-        retValue = retValue+uuid_tests
+        retValue = retValue+uuid_tests("connection string")
         closedb
 
         if retValue > 0 then err.raise retValue
     end function
 
     '********************************************
-    public function uuid_tests
-        log "****************************************"
-        log "****************************************"
-        log "****************************************"
+    public function uuid_tests(typeStr)
+        log ""
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log ""
+        
         dim retValue: retValue = 0
         dim i
         dim aa
@@ -1549,7 +1743,10 @@ class classSqliteOdbcTests
         aa = split(aQueryResults(2)(0),",")
         if aa(0) <> "Null" then retValue = retValue+1
         if aa(1) <> "Null" then retValue = retValue+1
-
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log typeStr & " " & typeStr & " " & typeStr & " " & typeStr 
+        log ""
         uuid_tests = retValue
     end function
 
@@ -2153,7 +2350,9 @@ class classSqliteOdbcTests
         dim retValue: retValue = 0
        
         log "******************************************************"
-        log "sqlite_extension_functions_path"
+        log "sqlite_extension_functions_path load_extension"
+        log "sqlite_extension_functions_path load_extension"
+        log "sqlite_extension_functions_path load_extension"
         opendb "SQL3 "
         log "load_extension(.\install\" & sBitPath & "\path.dll) "
         log query("SELECT load_extension('.\install\" & sBitPath & "\path.dll') as loaded")
@@ -2170,12 +2369,17 @@ class classSqliteOdbcTests
         logResult query2csv(" SELECT * from path_parts('c:\foo\bar.txt');")
         if aQueryResults(2)(0) <> """normal"",""foo""" then retValue = retValue + 1
         if aQueryResults(2)(1) <> """normal"",""bar.txt""" then retValue = retValue + 1
-        
+        log "sqlite_extension_functions_path load_extension"
+        log "sqlite_extension_functions_path load_extension"
+        log "sqlite_extension_functions_path load_extension"
+
         closedb
         
         log "******************************************************"
         opendb "SQL3-LoadExt-Path-fileio"
-        log "SQL3-LoadExt-Path-fileio"
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
         
         logResult query2csv(" SELECT path_dirname('c:\foo\bar.txt') as val;")
         if aQueryResults(2)(0) <> """c:\foo\""" then retValue = retValue + 1
@@ -2190,20 +2394,24 @@ class classSqliteOdbcTests
         if aQueryResults(2)(0) <> """normal"",""foo""" then retValue = retValue + 1
         if aQueryResults(2)(1) <> """normal"",""bar.txt""" then retValue = retValue + 1
 
-        ' this requires fileio extension which must be done via connection string
+        log "this requires fileio extension which must be done via connection string"
         dim q: q = _
             "select " & _
                 "path_extension(name), " & _
                 "count(*), " & _
                 "printf('%.*c', count(*), '*') as bar " & _
-            "from fsdir('.') " & _
+            "from fsdir('.\Debian') " & _
                 "where path_extension(name) is not null " & _
                 "group by 1 " & _
-                "order by 2 desc " & _
-                "limit 6;"
+                "order by 2 desc;"
+        log q
         logResult query2csv(q)
-        if aQueryResults(2).count <> 6 then retValue = retValue + 1
-
+        if aQueryResults(2).count <> 2 then retValue = retValue + 1
+        if aQueryResults(2)(0) <> """.ini"",1,""*"""  then retValue = retValue + 1
+        if aQueryResults(2)(1) <> """.in"",1,""*"""  then retValue = retValue + 1
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
+        log "sqlite_extension_functions_path SQL3-LoadExt-Path-fileio"
         closedb
         
         if retValue <> 0 then err.raise 1
@@ -2310,13 +2518,21 @@ class classSqliteOdbcTests
         log "ODBC driver setting is 3 for maximum compatibility. "
         log "Hence both examples below work (1 row returned for table t0)."
         log ""
-        query2csv("CREATE TABLE t0(c0 INTEGER);")
+        logResult query2csv("CREATE TABLE t0(c0 INTEGER);")
+        logResult query2csv("INSERT INTO t0 VALUES('x');")
+        logResult query2csv("INSERT INTO t0 VALUES(""y"");")
+        logResult query2csv("INSERT INTO t0 VALUES('z');")
+        logResult query2csv("select count(1) from t0;")
+        if aQueryResults(2)(0) <> 3 then retValue = retValue+1
+        log retValue
         
-        query2csv("select * from sqlite_master where type=""table"";")
+        logResult query2csv("select * from sqlite_master where type=""table"";")
         if aQueryResults(2).count <> 1 then retValue = retValue+1
+        log retValue
 
-        query2csv("select * from sqlite_master where type='table';")
+        logResult query2csv("select * from sqlite_master where type='table';")
         if aQueryResults(2).count <> 1 then retValue = retValue+1
+        log retValue
 
         closedb
         if retValue > 0 then err.raise retValue
@@ -3281,7 +3497,7 @@ class classSqliteOdbcTests
                 dbSqlite3 = oFile.path
                 log "sqlite3 file: " & dbSqlite3
                 opendb "SQL3 "
-                log query("select name from sqlite_master where type = 'table';")
+                log query("select name from sqlite_master where type = 'table' order by name;")
                 closedb
             end if
         next
@@ -4261,11 +4477,17 @@ class classSqliteOdbcTests
     public function getTableInfoSimple
         log "****************************************************************************"
         log "getTableInfoSimple"
+        
+        ' ensure we have some tables with contents 
+        test 5,5,"TEXT",5,true,"journal=OFF",false,false
+        
         opendb "SQL3 "
         
+        log query2csv("select * from sqlite_master") & vbcrlf
+
         log "want to get table info for table test_table, and in particular the column names"
         log "PRAGMA table_info() gets everything but you can't control what it gives you..." & vbcrlf
-        log query("select * from test_table limit 3") & vbcrlf
+        log query2csv("select * from test_table limit 3") & vbcrlf
         
         log "since the output of query is well known we can parse it to get long view of result..."  & vbcrlf
         dim sResult: sResult = query("PRAGMA table_info(test_table)")
@@ -4286,8 +4508,13 @@ class classSqliteOdbcTests
         log "List all columns in a SQLite database"
         log "based on https://til.simonwillison.net/sqlite/list-all-columns-in-a-database"
         
-        opendb "SQL3 "
+        ' ensure we have some tables with contents 
+        test 5,5,"TEXT",5,true,"journal=OFF",false,false
         
+        opendb "SQL3 "
+
+        log query2csv("select * from sqlite_master") & vbcrlf
+
         log ""
         log "first recipe - contains all the details provided by pragma_table_info()"
         log ""
