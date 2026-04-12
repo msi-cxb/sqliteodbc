@@ -46,7 +46,7 @@ REM report the compiler architecture as a check
 CALL :fn_GetCompilerArch
 
 REM go direct to install
-goto :fn_InstallDriver
+REM goto :fn_InstallDriver
 
 REM now that environemnt is set up, go build the code
 
