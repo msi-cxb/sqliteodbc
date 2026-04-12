@@ -304,13 +304,16 @@ REM ***************************************************
     call COPY  %ABS_PATH%\*.exe %appdata%\sqlite\%bit%bit > NUL
     REM timeout /t 1 > NUL
     ping -n 1 -w 0.2 10.0.0.1 > NUL
-    IF NOT DEFINED GITHUB_ACTIONS (
-        echo running locally...install using RunAs
-            Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
-    ) ELSE (
-        echo running in github...no RunAs
-        Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q"
-    )
+    Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
+    
+    REM IF NOT DEFINED GITHUB_ACTIONS (
+        REM echo running locally...install using RunAs
+            REM Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
+    REM ) ELSE (
+        REM echo running in github...no RunAs
+        REM Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q"
+    REM )
+    
     if errorlevel 1 (echo install error & goto exit)
     GOTO :EOF
     
