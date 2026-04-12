@@ -45,6 +45,9 @@ CALL :fn_ConfigVisualStudio
 REM report the compiler architecture as a check
 CALL :fn_GetCompilerArch
 
+REM go direct to install
+goto :fn_InstallDriver
+
 REM now that environemnt is set up, go build the code
 
 echo cleaning...
@@ -301,7 +304,13 @@ REM ***************************************************
     call COPY  %ABS_PATH%\*.exe %appdata%\sqlite\%bit%bit > NUL
     REM timeout /t 1 > NUL
     ping -n 1 -w 0.2 10.0.0.1 > NUL
-    Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
+    IF NOT DEFINED GITHUB_ACTIONS (
+        echo running locally...install using RunAs
+            Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q" -Verb Runas
+    ) ELSE (
+        echo running in github...no RunAs
+        Powershell Start cmd.exe -ArgumentList "/c","cd",%appdata%\sqlite\%bit%bit,"'&'","SQLiteODBCInstaller.exe","-u","-a","-q","'&'","SQLiteODBCInstaller.exe","-i","-d=sql3","-q"
+    )
     if errorlevel 1 (echo install error & goto exit)
     GOTO :EOF
     
