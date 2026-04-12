@@ -305,6 +305,13 @@ class classSqliteOdbcTests
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
         
+        REM sqlite_extension_fileio
+        REM If Err.Number <> 0 Then wscript.quit -1
+        
+        REM sqlite_extension_functions_path
+        REM If Err.Number <> 0 Then wscript.quit -1
+
+        
         ' sqlite features
         if runTests then
             sqlite3_datetime_validation

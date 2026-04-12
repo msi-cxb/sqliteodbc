@@ -36,6 +36,9 @@ if %bit%==32 (
     goto :EOF
 )
 
+REM go directly to install do not pass go do not collect $200...
+REM goto :install
+
 REM setup Visual Studio
 CALL :fn_ConfigVisualStudio
 
@@ -48,7 +51,7 @@ echo cleaning...
 
 REM clean is reqiured if you are switching between 32 and 64 bit builds
 nmake -f sqlite3odbc.mak clean
-REM if errorlevel 1 (echo clean error & goto :exit)
+if errorlevel 1 (echo clean error & goto :exit)
 
 echo building...
 
@@ -71,6 +74,8 @@ REM CXB=1 compiles in the tracing
 REM nmake -f sqlite3odbc.mak driver CXB=1
 
 if errorlevel 1 (echo build error & goto :exit)
+
+:install
 
 set installDir=.\install\%bit%bit
 
@@ -240,10 +245,33 @@ REM ***************************************************
     xcopy /Q /Y vfsstat.dll %installDir% 1>nul
     xcopy /Q /Y uint.dll %installDir% 1>nul
     xcopy /Q /Y wholenumber.dll %installDir% 1>nul
+    
+    xcopy /Q /Y bfsvtab.lib %installDir% 1>nul
+    xcopy /Q /Y checkfreelist.lib %installDir% 1>nul
+    xcopy /Q /Y crypto.lib %installDir% 1>nul
+    xcopy /Q /Y csv.lib %installDir% 1>nul
+    xcopy /Q /Y decimal.lib %installDir% 1>nul
+    xcopy /Q /Y extension-functions.lib %installDir% 1>nul
+    xcopy /Q /Y fileio.lib %installDir% 1>nul
+    xcopy /Q /Y ieee754.lib %installDir% 1>nul
+    xcopy /Q /Y inst.exe %installDir% 1>nul
+    xcopy /Q /Y regexp.lib %installDir% 1>nul
+    xcopy /Q /Y path.lib %installDir% 1>nul
+    xcopy /Q /Y series.lib %installDir% 1>nul
+    xcopy /Q /Y sha1.lib %installDir% 1>nul
+    xcopy /Q /Y shathree.lib %installDir% 1>nul
+    xcopy /Q /Y sqlfcmp.lib %installDir% 1>nul
+    xcopy /Q /Y totype.lib %installDir% 1>nul
+    xcopy /Q /Y uuid.lib %installDir% 1>nul
+    xcopy /Q /Y vfsstat.lib %installDir% 1>nul
+    xcopy /Q /Y uint.lib %installDir% 1>nul
+    xcopy /Q /Y wholenumber.lib %installDir% 1>nul
+
     xcopy /Q /Y sqldiff.exe %installDir% 1>nul
     xcopy /Q /Y sqlite3.exe %installDir% 1>nul
     xcopy /Q /Y uninst.exe %installDir% 1>nul
     xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
+    xcopy /Q /Y sqlite3odbc.lib %installDir% 1>nul
     xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
     
     if %bit%==32 (
