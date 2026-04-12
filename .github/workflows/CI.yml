@@ -10,7 +10,7 @@ on:
   
 jobs:
   build-and-test-sqliteodbc:
-    runs-on: windows-2022
+    runs-on: windows-latest
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     name: build and test sqliteodbc
