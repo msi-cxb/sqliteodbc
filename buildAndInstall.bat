@@ -233,6 +233,7 @@ REM ***************************************************
     xcopy /Q /Y crypto.dll %installDir% 1>nul
     xcopy /Q /Y csv.dll %installDir% 1>nul
     xcopy /Q /Y decimal.dll %installDir% 1>nul
+    xcopy /Q /Y eval.dll %installDir% 1>nul
     xcopy /Q /Y extension-functions.dll %installDir% 1>nul
     xcopy /Q /Y fileio.dll %installDir% 1>nul
     xcopy /Q /Y ieee754.dll %installDir% 1>nul
@@ -249,27 +250,6 @@ REM ***************************************************
     xcopy /Q /Y uint.dll %installDir% 1>nul
     xcopy /Q /Y wholenumber.dll %installDir% 1>nul
     
-    xcopy /Q /Y bfsvtab.lib %installDir% 1>nul
-    xcopy /Q /Y checkfreelist.lib %installDir% 1>nul
-    xcopy /Q /Y crypto.lib %installDir% 1>nul
-    xcopy /Q /Y csv.lib %installDir% 1>nul
-    xcopy /Q /Y decimal.lib %installDir% 1>nul
-    xcopy /Q /Y extension-functions.lib %installDir% 1>nul
-    xcopy /Q /Y fileio.lib %installDir% 1>nul
-    xcopy /Q /Y ieee754.lib %installDir% 1>nul
-    xcopy /Q /Y inst.exe %installDir% 1>nul
-    xcopy /Q /Y regexp.lib %installDir% 1>nul
-    xcopy /Q /Y path.lib %installDir% 1>nul
-    xcopy /Q /Y series.lib %installDir% 1>nul
-    xcopy /Q /Y sha1.lib %installDir% 1>nul
-    xcopy /Q /Y shathree.lib %installDir% 1>nul
-    xcopy /Q /Y sqlfcmp.lib %installDir% 1>nul
-    xcopy /Q /Y totype.lib %installDir% 1>nul
-    xcopy /Q /Y uuid.lib %installDir% 1>nul
-    xcopy /Q /Y vfsstat.lib %installDir% 1>nul
-    xcopy /Q /Y uint.lib %installDir% 1>nul
-    xcopy /Q /Y wholenumber.lib %installDir% 1>nul
-
     xcopy /Q /Y sqldiff.exe %installDir% 1>nul
     xcopy /Q /Y sqlite3.exe %installDir% 1>nul
     xcopy /Q /Y uninst.exe %installDir% 1>nul
