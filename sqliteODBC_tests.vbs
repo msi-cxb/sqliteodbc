@@ -304,14 +304,7 @@ class classSqliteOdbcTests
 
         sqlite_version
         If Err.Number <> 0 Then wscript.quit -1
-                
-        REM sqlite_extension_fileio
-        REM If Err.Number <> 0 Then wscript.quit -1
-        
-        REM sqlite_extension_functions_path
-        REM If Err.Number <> 0 Then wscript.quit -1
 
-        
         ' sqlite features
         if runTests then
             sqlite3_datetime_validation
@@ -615,7 +608,7 @@ class classSqliteOdbcTests
         dim sql
         dim i
         dim temp: temp = dbSqlite3
-        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\ssb_1.sqlite3"
+        dbSqlite3 = strFolder & "\testDBs_" & sBitPath & "\ssb-sf1.db"
         If objFso.FileExists(dbSqlite3) = false Then
             log dbSqlite3 & " does not exist! Skipping test sqlite_ssb"
             exit function
@@ -1550,7 +1543,6 @@ class classSqliteOdbcTests
         opendb "MEM  "
         log "******************************************************"
         log "sqlite_extension_functions_wholenumber"
-        log getSortedFunctionList("whole") & vbcrlf
         log query("drop table if exists nums;")
         log query("CREATE VIRTUAL TABLE nums USING wholenumber;")
         logResult query2csv("SELECT value FROM nums WHERE value<10;")
@@ -1559,7 +1551,7 @@ class classSqliteOdbcTests
         if aQueryResults(2)(8) <> 9 then retValue = retValue+1
         closedb
 
-        opendb "SQL3"
+        opendb "SQL3 "
         log getSortedFunctionList("whole") & vbcrlf
         log query("drop table if exists nums;")
         log query("CREATE VIRTUAL TABLE nums USING wholenumber;")
@@ -1568,6 +1560,8 @@ class classSqliteOdbcTests
         if aQueryResults(2)(0) <> 1 then retValue = retValue+1
         if aQueryResults(2)(8) <> 9 then retValue = retValue+1
         closedb
+        
+        log "retValue " & retValue
 
         if retValue > 0 then err.raise retValue
     end function
@@ -2131,17 +2125,29 @@ class classSqliteOdbcTests
         dim retValue: retValue = 0
 
         opendb "MEM  "
-        ss = getSortedFunctionList("md5")
-        if instr(ss, "no items") = 0 then retValue = retValue + 1
-        log retValue
+        query2csv("select hex(md5('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select upper(sha1('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""A9993E364706816ABA3E25717850C26C9CD0D89D"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha256('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha384('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED8086072BA1E7CC2358BAECA134C825A7"""))
+        log retValue & " " & aQueryResults(2)(0)
+        query2csv("select hex(sha512('abc'));")
+        retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"""))
+        log retValue & " " & aQueryResults(2)(0)
         closedb
         log ""
-  
+
         opendb "SQL3 "
         query2csv("select hex(md5('abc'));")
         retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""900150983CD24FB0D6963F7D28E17F72"""))
         log retValue & " " & aQueryResults(2)(0)
-        query2csv("select hex(sha1('abc'));")
+        query2csv("select upper(sha1('abc'));")
         retValue = retValue + abs(strcomp(aQueryResults(2)(0),"""A9993E364706816ABA3E25717850C26C9CD0D89D"""))
         log retValue & " " & aQueryResults(2)(0)
         query2csv("select hex(sha256('abc'));")
