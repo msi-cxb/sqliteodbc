@@ -49,6 +49,9 @@
 
 #ifdef SQLITE_CORE
     #include "sqlite3.h"
+    #ifndef SQLITE_EXTENSION_INIT2
+    #define SQLITE_EXTENSION_INIT2(v) (void)(v)
+    #endif
 #else
     #include "sqlite3ext.h"
     SQLITE_EXTENSION_INIT1

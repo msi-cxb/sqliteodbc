@@ -59,7 +59,11 @@ if errorlevel 1 (echo clean error & goto :exit)
 echo building...
 
 REM build driver, extension, and commandline utilities (this should be the default)
+nmake -f sqlite3odbc.mak setup-embed
 nmake -f sqlite3odbc.mak all
+
+REM build sqlite3.dll that can be used with system.data.sqlite
+REM nmake -f sqlite3odbc.mak sqlite3.dll
 
 REM build just the sqlite3.exe command line executable
 REM nmake -f sqlite3odbc.mak sqlite3.exe
@@ -183,7 +187,8 @@ REM ***************************************************
 
     SET VSVARS32=%VSVARS32:\\=\%
     %__DEBUGECHO% "%VSVARS32%" %CLARG%
-    CALL "%VSVARS32%" %CLARG% 1>nul
+    CALL "%VSVARS32%" %CLARG%
+    if errorlevel 1 (echo VS environment setup failed & goto :exit)
     GOTO :EOF
 
 REM ***************************************************
@@ -228,34 +233,34 @@ REM ***************************************************
 :fn_CopyFilesToInstall
     echo copying SQLite3 files to %installDir%...
     if not exist %installDir% ( mkdir  %installDir% )
-    xcopy /Q /Y bfsvtab.dll %installDir% 1>nul
-    xcopy /Q /Y checkfreelist.dll %installDir% 1>nul
-    xcopy /Q /Y crypto.dll %installDir% 1>nul
-    xcopy /Q /Y csv.dll %installDir% 1>nul
-    xcopy /Q /Y decimal.dll %installDir% 1>nul
-    xcopy /Q /Y eval.dll %installDir% 1>nul
-    xcopy /Q /Y extension-functions.dll %installDir% 1>nul
-    xcopy /Q /Y fileio.dll %installDir% 1>nul
-    xcopy /Q /Y ieee754.dll %installDir% 1>nul
-    xcopy /Q /Y inst.exe %installDir% 1>nul
-    xcopy /Q /Y regexp.dll %installDir% 1>nul
-    xcopy /Q /Y path.dll %installDir% 1>nul
-    xcopy /Q /Y series.dll %installDir% 1>nul
-    xcopy /Q /Y sha1.dll %installDir% 1>nul
-    xcopy /Q /Y shathree.dll %installDir% 1>nul
-    xcopy /Q /Y sqlfcmp.dll %installDir% 1>nul
-    xcopy /Q /Y totype.dll %installDir% 1>nul
-    xcopy /Q /Y uuid.dll %installDir% 1>nul
-    xcopy /Q /Y vfsstat.dll %installDir% 1>nul
-    xcopy /Q /Y uint.dll %installDir% 1>nul
-    xcopy /Q /Y wholenumber.dll %installDir% 1>nul
+    xcopy /Q /Y bfsvtab.dll %installDir% 1>nul || (echo Failed to copy bfsvtab.dll & goto :exit)
+    xcopy /Q /Y checkfreelist.dll %installDir% 1>nul || (echo Failed to copy checkfreelist.dll & goto :exit)
+    xcopy /Q /Y crypto.dll %installDir% 1>nul || (echo Failed to copy crypto.dll & goto :exit)
+    xcopy /Q /Y csv.dll %installDir% 1>nul || (echo Failed to copy csv.dll & goto :exit)
+    xcopy /Q /Y decimal.dll %installDir% 1>nul || (echo Failed to copy decimal.dll & goto :exit)
+    xcopy /Q /Y eval.dll %installDir% 1>nul || (echo Failed to copy eval.dll & goto :exit)
+    xcopy /Q /Y extension-functions.dll %installDir% 1>nul || (echo Failed to copy extension-functions.dll & goto :exit)
+    xcopy /Q /Y fileio.dll %installDir% 1>nul || (echo Failed to copy fileio.dll & goto :exit)
+    xcopy /Q /Y ieee754.dll %installDir% 1>nul || (echo Failed to copy ieee754.dll & goto :exit)
+    xcopy /Q /Y inst.exe %installDir% 1>nul || (echo Failed to copy inst.exe & goto :exit)
+    xcopy /Q /Y regexp.dll %installDir% 1>nul || (echo Failed to copy regexp.dll & goto :exit)
+    xcopy /Q /Y path.dll %installDir% 1>nul || (echo Failed to copy path.dll & goto :exit)
+    xcopy /Q /Y series.dll %installDir% 1>nul || (echo Failed to copy series.dll & goto :exit)
+    xcopy /Q /Y sha1.dll %installDir% 1>nul || (echo Failed to copy sha1.dll & goto :exit)
+    xcopy /Q /Y shathree.dll %installDir% 1>nul || (echo Failed to copy shathree.dll & goto :exit)
+    xcopy /Q /Y sqlfcmp.dll %installDir% 1>nul || (echo Failed to copy sqlfcmp.dll & goto :exit)
+    xcopy /Q /Y totype.dll %installDir% 1>nul || (echo Failed to copy totype.dll & goto :exit)
+    xcopy /Q /Y uuid.dll %installDir% 1>nul || (echo Failed to copy uuid.dll & goto :exit)
+    xcopy /Q /Y vfsstat.dll %installDir% 1>nul || (echo Failed to copy vfsstat.dll & goto :exit)
+    xcopy /Q /Y uint.dll %installDir% 1>nul || (echo Failed to copy uint.dll & goto :exit)
+    xcopy /Q /Y wholenumber.dll %installDir% 1>nul || (echo Failed to copy wholenumber.dll & goto :exit)
     
-    xcopy /Q /Y sqldiff.exe %installDir% 1>nul
-    xcopy /Q /Y sqlite3.exe %installDir% 1>nul
-    xcopy /Q /Y uninst.exe %installDir% 1>nul
-    xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul
-    xcopy /Q /Y sqlite3odbc.lib %installDir% 1>nul
-    xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul
+    xcopy /Q /Y sqldiff.exe %installDir% 1>nul || (echo Failed to copy sqldiff.exe & goto :exit)
+    xcopy /Q /Y sqlite3.exe %installDir% 1>nul || (echo Failed to copy sqlite3.exe & goto :exit)
+    xcopy /Q /Y uninst.exe %installDir% 1>nul || (echo Failed to copy uninst.exe & goto :exit)
+    xcopy /Q /Y sqlite3odbc.dll %installDir% 1>nul || (echo Failed to copy sqlite3odbc.dll & goto :exit)
+    xcopy /Q /Y sqlite3odbc.lib %installDir% 1>nul || (echo Failed to copy sqlite3odbc.lib & goto :exit)
+    xcopy /Q /Y SQLiteODBCInstaller.exe %installDir% 1>nul || (echo Failed to copy SQLiteODBCInstaller.exe & goto :exit)
     
     if %bit%==32 (
     SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x86.exe
@@ -263,7 +268,7 @@ REM ***************************************************
     SET VC_REDIST=%VCINSTALLDIR%Redist\MSVC\v143\vc_redist.x64.exe
     )
     echo adding VC_REDIsT installer %VC_REDIST%...
-    xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul
+    xcopy /Q /Y "%VC_REDIST%" %installDir% 1>nul || (echo Failed to copy VC_REDIST & goto :exit)
     GOTO :EOF
 
 REM ***************************************************
