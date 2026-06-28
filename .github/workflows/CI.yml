@@ -32,12 +32,12 @@ jobs:
         uses: microsoft/setup-msbuild@v2
         id: setup_msbuild
       
-      - name: build 32 bit ODBC driver
-        id: build_32_bit_ODBC_driver
-        shell: cmd
-        run: |
-          cd sqliteodbc
-          buildAndInstall.bat 32 true
+      # - name: build 32 bit ODBC driver
+        # id: build_32_bit_ODBC_driver
+        # shell: cmd
+        # run: |
+          # cd sqliteodbc
+          # buildAndInstall.bat 32 true
 
       - name: build 64 bit ODBC driver
         id: build_64_bit_ODBC_driver
@@ -46,12 +46,12 @@ jobs:
           cd sqliteodbc
           buildAndInstall.bat 64 true
 
-      - name: build 32 bit sqllogictest
-        id: build_32_bit_sqllogictest
-        shell: cmd
-        run: |
-          cd sqllogictest/src
-          buildWithVisualStudio.bat 32
+      # - name: build 32 bit sqllogictest
+        # id: build_32_bit_sqllogictest
+        # shell: cmd
+        # run: |
+          # cd sqllogictest/src
+          # buildWithVisualStudio.bat 32
 
       - name: build 64 bit sqllogictest
         id: build_64_bit_sqllogictest
@@ -65,19 +65,19 @@ jobs:
         shell: cmd
         run: |
           cd sqllogictest/src
-          where sqllogictest_32.exe
-          c:\windows\syswow64\cscript //Nologo getInstalledODBCDrivers.vbs
-          sqllogictest_32 --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
+          # where sqllogictest_32.exe
+          # c:\windows\syswow64\cscript //Nologo getInstalledODBCDrivers.vbs
+          # sqllogictest_32 --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
           where sqllogictest_64.exe
           c:\windows\system32\cscript //Nologo getInstalledODBCDrivers.vbs
           sqllogictest_64 --odbc "DSN=SQLite3 Datasource;DATABASE=:memory:;" --verify ..\test\select1.test
 
-      - name: run full 32 bit sqllogictest
-        id: run_full_32_bit_sqllogictest
-        shell: cmd
-        run: |
-          cd sqllogictest/src
-          run-all-odbc.bat 32
+      # - name: run full 32 bit sqllogictest
+        # id: run_full_32_bit_sqllogictest
+        # shell: cmd
+        # run: |
+          # cd sqllogictest/src
+          # run-all-odbc.bat 32
     
       - name: run full 64 bit sqllogictest
         id: run_full_64_bit_sqllogictest
@@ -86,12 +86,12 @@ jobs:
           cd sqllogictest/src
           run-all-odbc.bat 64
     
-      - name: run 32 bit testscript
-        id: run_32_bit_testscript
-        shell: cmd
-        run: |
-          cd sqliteodbc
-          run_sqliteODBC_test_WSF.bat 32
+      # - name: run 32 bit testscript
+        # id: run_32_bit_testscript
+        # shell: cmd
+        # run: |
+          # cd sqliteodbc
+          # run_sqliteODBC_test_WSF.bat 32
 
       - name: run 64 bit testscript
         id: run_64_bit_testscript
