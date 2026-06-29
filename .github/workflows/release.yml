@@ -20,11 +20,11 @@ jobs:
         id: setup_msbuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: build 32 bit ODBC driver
-        id: build_32_bit_ODBC_driver
-        shell: cmd
-        run: |
-          buildAndInstall.bat 32 true
+      # - name: build 32 bit ODBC driver
+        # id: build_32_bit_ODBC_driver
+        # shell: cmd
+        # run: |
+          # buildAndInstall.bat 32 true
 
       - name: build 64 bit ODBC driver
         id: build_64_bit_ODBC_driver
